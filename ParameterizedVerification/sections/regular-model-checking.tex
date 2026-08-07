@@ -1,0 +1,110 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Regular Model Checking}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Regular Model Checking (RMC) is a symbolic framework for verifying
+parameterized and infinite-state systems by representing both sets of
+configurations and transition relations using the theory of regular languages
+and finite automata~\cite{KW01,BW98}. The key idea is that regular sets serve
+as an efficient symbolic representation of infinite state spaces, playing a
+role analogous to that of Binary Decision Diagrams (BDDs) in symbolic model
+checking of finite-state systems~\cite{Abd10}.
+
+In its basic form, RMC represents a system as follows. A \emph{configuration}
+is a finite word over a fixed alphabet~$\Sigma$, where each symbol encodes the
+local state of one component (a process, a stack element, a channel message,
+etc.). Sets of configurations, including the initial set and the set of bad
+configurations, are represented as regular languages over~$\Sigma$. The
+transition relation is encoded as a \emph{length-preserving finite-state
+transducer}~$T$ over pairs $(a, a') \in \Sigma \times \Sigma$: the transducer
+accepts a pair of words $(w, w')$ if and only if the system can move from
+configuration~$w$ to configuration~$w'$ in one step.
+
+This simple setup already captures a wide variety of models. Parameterized
+systems consisting of an arbitrary number of finite-state processes in a
+linear or ring topology can be modeled by letting each position in the word
+represent one process. Systems operating on unbounded queues, stacks, or
+integer variables can similarly be encoded by letting word positions represent
+data structure contents. The length-preserving constraint on the transducer is
+not a restriction for safety verification: for parameterized systems it simply
+means that the number of processes is fixed at the start of a run, while
+being arbitrary across runs.
+
+Safety verification reduces to checking whether $(I \circ T^*) \cap B =
+\emptyset$, where $I$ is the regular set of initial configurations, $B$ is
+the regular set of bad configurations, and $T^*$ is the reflexive transitive
+closure of the transducer relation. Liveness verification reduces to a
+\emph{repeated reachability} problem: checking whether there exists an
+infinite computation from~$I$ through~$T$ that visits a set of accepting
+configurations~$F$ infinitely often.
+
+The central computational challenge is computing $T^+$ (or $I \circ T^*$)
+effectively. Naively iterating the transducer, computing $T^1, T^2, T^3,
+\ldots$, does not converge in general. The standard approach is to use
+\emph{acceleration} or \emph{widening} techniques that jump directly to a
+representation of~$T^+$. Acceleration is typically based on
+\emph{quotienting}: one finds an equivalence relation~$\simeq$ on the states
+of a finite approximation~$T^n$, merges equivalent states to obtain a
+quotient transducer $T^n/{\simeq}$, and checks whether the result
+characterizes~$T^+$. The difficulty is that quotienting generally enlarges
+the accepted language: $L(T^n) \subseteq L(T^n/{\simeq})$, often strictly. A
+key theoretical contribution is the identification of equivalence relations
+that \emph{preserve} the transitive closure, i.e., for which
+$(T/{\simeq})^+$ is equivalent to~$T^+$. Such relations can be derived from
+forward and backward bisimulations on the states of the \emph{history
+transducer}, a canonical infinite transducer built as the union of all
+$T^n$ for $n \geq 1$, where each state records the full sequence of
+$T$-states visited during product construction. Minimizing the history
+transducer via suitable bisimulations yields a finite quotient that
+characterizes~$T^+$~\cite{BJND03,AJNO02}.
+
+While the transducer-based approach is elegant and general, it can be
+computationally expensive and may not scale to larger protocols. An important
+line of work within the RMC framework addresses this by replacing the full
+power of regular languages with a lighter symbolic representation based on
+\emph{upward-closed sets}~\cite{Abd10}, in a technique known as
+\emph{monotonic abstraction}. The approach targets parameterized systems with
+a linear process topology and global transitions (both universal and
+existential). Configurations are again words over the process state alphabet,
+and the subword ordering $c_1 \preceq c_2$ (meaning $c_1$ occurs as a
+not-necessarily-contiguous subsequence of $c_2$) plays a central role. Bad
+configurations are characterized by upward-closed sets with respect to this
+ordering: if a configuration is bad, then any larger configuration (with more
+processes) is also bad. Such sets have a finite symbolic representation in
+terms of their minimal elements, making them far more tractable than arbitrary
+regular sets.
+
+The core idea is to replace the concrete transition relation~$\to$ with an
+abstract relation~$\to_A$ that over-approximates~$\to$ and is monotone with
+respect to~$\preceq$. Local and existential transitions are already monotone
+and require no approximation. Universal transitions, where a process may
+move only if all processes in its context satisfy some condition, are
+\emph{not} monotone, since adding more processes to a configuration may
+violate the universal condition and disable the transition. The abstraction
+handles this by allowing a configuration to silently drop processes that
+obstruct the transition, effectively making the universal condition vacuously
+satisfiable. Since $\to_A$ is an over-approximation, any safety property
+that holds in the abstract model is guaranteed to hold in the concrete one.
+
+Safety verification then proceeds by \emph{backward reachability analysis}.
+Starting from the upward-closed set $\mathit{Bad}$ of bad configurations, one
+computes the sequence $U_0 = \mathit{Bad}$, $U_{i+1} = U_i \cup
+\mathit{Pre}_A(U_i)$, where $\mathit{Pre}_A$ is the predecessor operator
+under~$\to_A$. Because $\to_A$ is monotone, each $U_i$ remains upward-closed
+and can be represented by a finite set of generators. Termination is
+guaranteed by Dickson's lemma: the subword ordering~$\preceq$ is a well
+quasi-ordering on words, so every ascending chain of upward-closed sets
+stabilizes after finitely many steps. The algorithm terminates when no new
+generators (up to subsumption) are produced; if none of the generators
+represents an initial configuration, the system is safe.
+
+RMC has been successfully applied to token-passing systems, mutual exclusion
+algorithms, and systems with unbounded communication channels, stacks, and
+integer variables. Beyond the linear word model, the framework extends to
+configurations represented as trees, enabling verification of systems with
+hierarchical or recursive structure~\cite{AJNO02}. Further extensions handle
+broadcast communication, binary rendezvous, processes operating on numerical
+variables with gap-order constraints, and systems running under weak memory
+models. The connection between monotonic abstraction and well-structured
+transition systems provides general decidability results for classes of
+systems that extend well beyond the purely parameterized setting~\cite{Abd10}.

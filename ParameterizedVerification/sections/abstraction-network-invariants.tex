@@ -1,0 +1,40 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Abstraction and Network Invariants}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Abstraction-based methods tackle the parameterized problem by reducing it to a
+finite, non-parameterized one. The idea is to construct an abstract system ---
+typically a small, fixed-size system, that \emph{over-approximates} the
+behavior of the full parameterized family. If a safety property holds in the
+abstract system, it holds in all concrete instances~\cite{WL89,PXZ02}.
+
+A particularly influential instantiation of this idea is the \emph{network
+invariant} method~\cite{WL89}, further developed in~\cite{PXZ02}. Consider
+a system consisting of $n$ copies of a process template running in parallel.
+A network invariant is a single process~$I$ (or small composition of processes)
+that captures the collective behavior of all $n-1$ processes that a given
+process interacts with. Verifying the property then reduces to checking the
+two-process composition of one concrete process with the invariant~$I$,
+regardless of~$n$. If this finite system satisfies the property, and~$I$ is
+a valid over-approximation of the environment, then all $n$-process instances
+satisfy it too.
+
+Finding the right invariant automatically is the central challenge. Approaches
+range from manual construction guided by domain knowledge, to automated
+inference using abstract interpretation, to counterexample-guided abstraction
+refinement (CEGAR) adapted to the parameterized setting. In the CEGAR approach,
+one begins with a coarse invariant, checks the finite abstract system, and if
+a spurious counterexample is found, refines the invariant to rule it out. The
+work of~\cite{PXZ02} combines this idea with \emph{$(0,1,\infty)$-counter
+abstraction}, which tracks for each local state whether zero, one, or many
+processes occupy it. This finite abstraction is often coarse but captures
+enough structure to verify mutual exclusion and other coordination properties
+automatically, and the abstraction can be systematically refined when needed.
+
+The network invariant approach is closely related to view abstraction
+(Section~3) in spirit: both methods replace the unbounded environment of a
+process by a finite abstract summary. The key difference is in how that
+summary is constructed and updated. Network invariants are defined globally
+as a fixed process before verification begins; view abstraction constructs the
+summary on the fly from the concrete reachability analysis, refining it
+incrementally as the precision parameter~$k$ increases.

@@ -1,0 +1,59 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{SMT-Based Methods}
+% ═════════════════════════════════════════════════════════════════════════════
+
+The rise of powerful Satisfiability Modulo Theories (SMT) solvers over the
+past two decades has opened new avenues for parameterized verification.
+SMT-based methods encode system states, transitions, and properties as logical
+formulas and leverage highly optimized solvers to reason about them
+automatically~\cite{BSST09}. Their main advantage over purely deductive
+approaches is that the invariant search is largely automated; their main
+advantage over symbolic model checking methods is that the state space is
+represented logically rather than explicitly, making them applicable to
+systems with rich data and large process counts.
+
+A prominent line of work in this space is \emph{IC3/PDR} (Property Directed
+Reachability), originally developed for finite-state hardware
+verification~\cite{Bra11} and later extended to the parameterized setting
+through quantified invariant inference. IC3/PDR works by incrementally
+constructing an inductive strengthening of the safety property: it maintains
+a sequence of formulas that approximate the set of states reachable within
+increasing numbers of steps, using counterexamples to push these approximations
+forward and inductive checks to confirm that they constitute a valid invariant.
+In the parameterized setting, these formulas are universally quantified over
+process identifiers, and SMT reasoning over the resulting quantified theories
+replaces the finite propositional checks of the original algorithm.
+
+Tools such as Ivy~\cite{PLSS16} and \textsc{mypyvy} build on these ideas to
+provide interactive and automated frameworks for specifying and verifying
+distributed protocols. Ivy allows users to specify systems in a first-order
+logical language with a decidable fragment (essentially, universal formulas
+over uninterpreted relations) and to interactively supply lemmas that guide
+the invariant synthesis. When the user identifies the right structure, the
+tool checks the proof obligations automatically using SMT. In practice, this
+workflow has successfully verified a range of distributed protocols, including
+variants of Paxos, two-phase commit, and leader election.
+
+Another direction uses \emph{array-based systems}~\cite{GS10}, where the
+parameterized state is modeled as an array indexed by process identifiers,
+and quantified SMT formulas express properties over all processes
+simultaneously. The MCMT tool~\cite{GS10} implements model checking for
+array-based systems via backward reachability in a quantified fragment of
+first-order logic, using SMT solvers to discharge the fixpoint conditions.
+This approach handles systems in which each process has a local state drawn
+from an arbitrary (possibly infinite) domain, modeled as an interpreted theory
+in the SMT solver. Array-based methods have seen success on distributed
+protocols including Paxos variants and have connections to the theory of
+array property fragments studied in program verification.
+
+The relationship between SMT-based methods and the other approaches in this
+chapter is instructive. SMT methods can be seen as automating the invariant
+discovery step that deductive methods (Section~6) leave to the user, while
+using a logical representation of state that subsumes the regular-language
+and upward-closed-set representations of Sections~4--5. The tradeoff is
+decidability: the quantified theories used by SMT-based tools are generally
+undecidable, and the tools rely on heuristics, user interaction, or
+restriction to decidable fragments to terminate. This places SMT-based methods
+at the automation-expressiveness frontier: more automatic than purely deductive
+approaches, but less guaranteed to terminate than cutoff or monotonic
+abstraction methods.

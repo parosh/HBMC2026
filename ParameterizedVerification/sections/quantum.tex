@@ -1,0 +1,148 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Parameterized Verification of Quantum Circuits}
+% ═════════════════════════════════════════════════════════════════════════════
+
+The preceding sections have developed parameterized verification in the
+classical setting: processes communicate through shared memory or message
+passing, the parameter~$n$ counts the number of processes, and correctness
+is expressed as a safety or liveness property over an infinite family of
+transition systems. A structurally analogous challenge arises in quantum
+computing. Most useful quantum algorithms, Shor's factoring algorithm,
+Grover's search, the Quantum Fourier Transform, are \emph{parameterized by
+input size}: a quantum \emph{program} takes~$n$ as input and dynamically
+generates the corresponding $n$-qubit circuit. Verifying such a program
+requires establishing correctness for all values of~$n$ simultaneously, a
+goal that parallels classical parameterized verification but requires
+substantially different technical machinery.
+
+\paragraph{The verification problem.}
+The correctness criterion for quantum programs is characteristically different
+from the safety and liveness properties of Sections~2--8. Rather than asking
+whether a bad state is ever reached, one asks whether the program computes
+the right function: given a set of quantum state pairs $(p, q)$, does the
+program, for every input size~$n$, correctly map input state~$p$ to output
+state~$q$? This \emph{relational} (or \emph{functional}) specification captures
+input-output correctness across all parameterized instances simultaneously.
+It also subsumes \emph{equivalence checking} between two parameterized programs
+--- a property of direct practical importance for verifying that an optimized
+circuit implementation is functionally identical to a reference specification,
+regardless of~$n$.
+
+Existing approaches to quantum program verification have made notable progress
+but fall short of fully automatic treatment of general parameterized circuits.
+The Qbricks project~\cite{Qbricks} develops a deductive framework for quantum
+programs with rich specifications, but verification is not fully automated and
+requires user-provided proof annotations. The AutoQ
+tool~\cite{AutoQ1,AutoQ2} supports automated verification of quantum circuits
+using tree automata but is limited to a restricted class of parameterized
+instances. A fully automatic framework for general parameterized quantum
+programs was an open problem until recently~\cite{AutoQPara}.
+
+\paragraph{Representing infinite families of quantum states.}
+The central challenge in all parameterized verification is finding a finite
+symbolic representation of an infinite family of system states, one state
+space for each value of~$n$. In the classical setting, regular languages over
+a finite alphabet serve this role (Section~4): a single finite automaton
+compactly represents all reachable configurations across all instance sizes.
+In the quantum setting the objects are quantum states rather than process
+configurations. An $n$-qubit quantum state is a vector of $2^n$ complex
+amplitudes, and a parameterized algorithm generates an infinite family of
+such vectors, one for each~$n$, with a structured recursive form that grows
+exponentially in size but must be captured in a finite representation.
+
+The framework of~\cite{AutoQPara} achieves this through a new automata model
+called \emph{synchronized weighted tree automata} (SWTAs). The starting point
+is the observation that an $n$-qubit quantum state can be naturally represented
+as a binary tree of depth~$n$: each internal node corresponds to a qubit, and
+each leaf stores the complex amplitude associated with a particular
+computational basis state. Standard tree automata recognize sets of such
+trees, providing a symbolic representation of sets of quantum states that is
+analogous to finite automata over words. SWTAs extend this with two additional
+features. First, \emph{colors} attached to tree nodes serve as synchronization
+labels, allowing the automaton to correlate corresponding positions across two
+different state trees; this is the mechanism by which input-output pairs are
+linked. Second, \emph{weights} on transitions encode complex amplitudes,
+enabling the automaton to represent not merely which quantum states are
+possible, but what amplitude each state carries. Together, these extensions
+yield a model that defines a \emph{function} from color sequences to quantum
+states, rather than simply a set of states. This functional view is essential
+for relational verification: it allows a specification to assert what output
+state is expected for each input state, across all input sizes simultaneously.
+
+\paragraph{Transducers for quantum gate semantics.}
+In regular model checking, the transition relation of a parameterized system
+is encoded as a finite-state transducer, and reachability reduces to computing
+the transitive closure of that transducer (Section~4). The quantum analogue
+replaces the transition relation with a \emph{quantum gate}, and the transducer
+must encode the linear transformation that the gate applies to the quantum
+state tree. The framework of~\cite{AutoQPara} introduces a class of transducers
+that operate directly on SWTAs: given an input SWTA representing a family of
+quantum states, applying a gate transducer produces an output SWTA representing
+the family of states after the gate has been applied.
+
+A central concern in any symbolic framework for quantum computation is
+\emph{succinctness}: a quantum gate on $n$ qubits is a $2^n \times 2^n$
+unitary matrix, and a naive representation is exponential in~$n$. The
+transducer representation avoids this blow-up. As an illustration, the
+transducer for the Quantum Fourier Transform on $n$ qubits has a number of
+states that is \emph{polynomial} in~$n$, exploiting the recursive structure
+of the QFT to obtain an exponentially more compact representation than a
+matrix encoding would require. This mirrors the advantage of transducers
+over explicit transition tables in classical regular model checking.
+
+A further key ingredient is a \emph{composition operator} for transducers.
+Given transducers for two sub-circuits, the operator automatically constructs
+a transducer for their sequential composition. Starting from transducers for
+individual gates, repeated composition assembles the transducer for an
+entire circuit without user intervention. The operator extends to
+\emph{parameterized programs}: given a transducer for a finite circuit
+constituting one layer of a parameterized algorithm, composition generates
+a transducer for the full parameterized version with an arbitrary number
+of such layers. This step, lifting from finite-circuit verification to
+parameterized verification, is the direct quantum analogue of computing
+the transitive closure of a transducer in classical regular model checking.
+
+\paragraph{Verification algorithms and experimental results.}
+With SWTAs as the specification formalism and transducers as the program model,
+functional verification reduces to checking \emph{SWTA inclusion}: given the
+SWTA~$\mathcal{A}$ specifying the desired input-output relation and the
+SWTA~$\mathcal{A}'$ obtained by applying the program transducer to the input
+specification, verify that $\llbracket \mathcal{A}' \rrbracket \subseteq
+\llbracket \mathcal{B} \rrbracket$. Equivalence checking between two
+parameterized programs reduces to an equality check between the output SWTAs
+they produce when applied to a complete set of linearly independent inputs;
+correctness of this reduction follows from the fact that quantum programs
+implement linear transformations, so agreement on a complete input basis
+implies agreement on all inputs. Both inclusion and equality of SWTAs are
+decidable, and the framework provides practical algorithms for both.
+
+The implementation, called \textsc{AutoQ-Para}~\cite{AutoQPara}, was evaluated
+on a diverse set of benchmarks spanning algorithmic, arithmetic,
+error-correction, and simulation circuits. It successfully verified the
+Bernstein-Vazirani algorithm, a ripple-carry adder, a syndrome extraction
+circuit from a quantum error-correcting code, and optimized implementations
+of Grover's search and Hamiltonian simulation, comparing them against their
+unoptimized reference counterparts. Verification times ranged from
+14 milliseconds to 11 seconds, and to the best of the authors' knowledge
+these are the first fully automatic parameterized verifications of circuits
+of this kind.
+
+\paragraph{Connections to classical parameterized verification.}
+The structural parallels with classical parameterized verification are
+instructive. In both settings the parameter~$n$ indexes an infinite family of
+systems, and the goal is to verify a property of the entire family from a
+finite symbolic representation. Regular languages and SWTAs both fill this
+role compactly, words for classical configurations and trees for quantum states.
+Transducers encode transition relations in the classical case and gate semantics
+in the quantum case, and computing transitive closures or repeated compositions
+is the operation that lifts finite reasoning to the parameterized family in
+both. The SWTA inclusion check mirrors the backward reachability pattern of
+monotonic abstraction, amounting to verifying that no reachable output state
+lies outside the specification. What distinguishes the quantum setting is the
+algebraic structure of the state space: quantum states carry complex amplitudes
+subject to normalization and unitarity constraints, and gates are unitary linear
+transformations rather than arbitrary relations. The SWTA model is designed to
+respect this structure, with weights on transitions as the mechanism for
+tracking amplitudes within an automata-theoretic framework. The result is, in
+effect, a quantum lifting of regular model checking, adapted to the
+linear-algebraic semantics of quantum computation.

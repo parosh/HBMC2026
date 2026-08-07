@@ -1,0 +1,49 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Deductive and Proof-Based Methods}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Deductive approaches shift the verification task from automated state-space
+exploration to the construction of formal proofs, often assisted by theorem
+provers or proof assistants. The idea is to find invariants, properties
+that hold at every reachable state of the system for every~$n$, and prove
+that they are preserved by every system transition, regardless of the number
+of processes~\cite{OG76,Lam94}. Since the proof is carried out symbolically
+over an arbitrary~$n$, this style of reasoning handles unbounded parameters
+without requiring enumeration of instances.
+
+Classic work by Owicki and Gries~\cite{OG76} laid the groundwork for
+assertional reasoning about concurrent programs: each process is annotated
+with pre- and post-conditions, and an interference freedom check ensures that
+no process's execution invalidates another's assertions. The method was
+designed for a fixed, known number of processes, but the underlying proof
+discipline, inductive invariants plus non-interference, scales naturally
+to the parameterized case by carrying out the annotation and check for a
+symbolic, arbitrary process in a family. Lamport's TLA+~\cite{Lam94} provides
+a formal language for specifying and proving properties of concurrent and
+distributed systems in this spirit, and has been applied to industrial-scale
+protocols at Amazon Web Services and Intel, among others.
+
+A significant challenge for deductive methods is the discovery of inductive
+invariants: properties strong enough to be preserved under all transitions and
+to imply the desired safety property, but not so strong as to be unprovable.
+The \emph{invisible invariants} technique of Pnueli, Ruah, and
+Zuck~\cite{PRZ01} addresses this by automatically generating candidate
+invariants from small finite instances of the system and then checking whether
+they hold inductively for all~$n$. The idea is that the right invariant is
+often already visible in small instances and can be generalized to the full
+parameterized family. This makes deductive verification partly automatic, at
+the cost of completeness: if the right invariant is not among those generated,
+the procedure does not terminate with a proof.
+
+More recent work integrates deductive reasoning with interactive proof
+assistants, allowing arbitrarily complex invariants to be stated and verified
+with machine-checked proofs. The Ivy system~\cite{PLSS16}, which we return to
+in Section~7 in its SMT-based incarnation, is representative of this direction:
+it combines an interactive specification language with automated checking of
+proof obligations. Proof-based methods tend to be the most expressive and
+general of all approaches to parameterized verification, capable of handling
+protocols with complex data structures, arithmetic, and dynamic topology.
+Their principal limitation is the burden they place on the user: finding and
+expressing the right invariant requires deep insight into the protocol's
+correctness argument, and scaling to large or complex protocols remains
+demanding even with modern tool support.

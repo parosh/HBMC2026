@@ -1,0 +1,40 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Early Foundations}
+% ═════════════════════════════════════════════════════════════════════════════
+
+The questions studied in this chapter were first crystallized in a body of work
+from the late 1980s and 1990s that established both the model and the basic
+techniques of parameterized verification. A foundational formulation considers a
+system composed of a single control process together with an unbounded
+collection of user processes sharing a common definition, communicating through
+rendez-vous synchronization in the style of CCS~\cite{GerSis92}. The central
+contribution was to show that reasoning about the entire infinite family can be
+reduced to a finite analysis: decision procedures were given for checking
+whether every process satisfies a given indexed temporal specification, and the
+reachability questions arising in the analysis were connected to the theory of
+Petri nets (vector addition systems), whose coverability problem is decidable.
+This early demarcation of the boundary between decidable and undecidable cases,
+and of the algebraic structures underlying it, set the agenda for much of the
+work that followed.
+
+A complementary early line of work targeted linear networks of arbitrary size
+and introduced automata as inductive invariants~\cite{SisGyu99}. A correctness
+property is itself specified by an automaton, from which an invariant automaton
+is synthesized; an induction on the number of processes then establishes that
+the property is preserved as the network grows. The method was shown to be
+complete for safety properties. It directly anticipates both the
+network-invariant approach of Section~5 and the regular model checking
+framework of Section~4, in which sets of global configurations of unbounded
+width are represented symbolically by finite automata.
+
+A further theme running through this early work is the exploitation of the
+symmetry inherent in a population of identical processes. Because the identity
+of an individual process is immaterial to the global behavior of the system,
+verification can be carried out over equivalence classes of configurations
+rather than over configurations themselves~\cite{EmeSis96}. Combining this
+observation with fairness leads to on-the-fly model checking procedures that
+exploit symmetry to keep the explored state space manageable~\cite{GyuSis97}.
+Taken together, these strands, finite reductions for synchronizing populations,
+automata-based invariants for linear networks, and symmetry reduction for
+replicated components, form the conceptual foundation on which the remainder
+of this chapter builds.
