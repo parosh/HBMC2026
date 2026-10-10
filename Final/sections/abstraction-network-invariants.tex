@@ -1,0 +1,150 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Abstraction and Network Invariants}
+\label{sec:abstraction}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Abstraction-based methods address the parameterized problem by reducing it to a
+finite, non-parameterized one. The idea is to construct an abstract system,
+typically a small, fixed-size system, that \emph{over-approximates} the
+behavior of the full parameterized family. If a safety property holds in the
+abstract system, it holds in all concrete instances~\cite{WL89,PXZ02,ZP04}.
+The methods in this section differ in what the abstract system describes: the
+environment of a single process, the number of processes in each local state,
+or the relationship between a reference process and the others.
+
+\subsection{Network Invariants}
+
+A particularly influential instantiation of this idea is the \emph{network
+invariant} method~\cite{WL89,KM89}, further developed
+in~\cite{KPSZ02,LHR97}. Consider a system consisting of $n$ copies of a
+process template running in parallel. A network invariant is a single
+process~$I$ (or small composition of processes) that captures the collective
+behavior of all $n-1$ processes that a given process interacts with.
+Verifying the property then reduces to checking the two-process composition
+of one concrete process with the invariant~$I$, regardless of~$n$. If this
+finite system satisfies the property, and~$I$ is a valid over-approximation of
+the environment, then all $n$-process instances satisfy it too.
+
+Validity of the invariant is established by induction, as described in
+Section~\ref{sec:early}: one checks that $I$ over-approximates a single copy of
+the template, and that the composition of~$I$ with one more copy is again
+over-approximated by~$I$. Both checks are finite-state problems. The notion of
+over-approximation is a preorder on processes, such as trace inclusion or
+simulation, that is preserved by parallel composition and that preserves the
+properties of interest.
+
+As an illustration, consider the running example from the point of view of
+one process. The other processes matter to it only through the question of
+whether one of them is in~$\Crit$. A candidate invariant~$I$ has two states,
+\emph{free} and \emph{busy}. It can move from free to busy only when the
+process it is composed with is not in~$\Crit$, and it can move from busy to
+free at any time. The composition of one process with~$I$ satisfies mutual
+exclusion, since the process enters~$\Crit$ only when $I$ is free, and $I$
+becomes busy only when the process is not in~$\Crit$. The composition of~$I$
+with one more process, observed through the same question, behaves again
+like~$I$, which establishes validity.
+
+Finding the right invariant automatically is the central challenge. Approaches
+range from manual construction guided by domain knowledge, to automated
+inference using abstract interpretation, to counterexample-guided abstraction
+refinement (CEGAR) adapted to the parameterized setting. In the CEGAR approach,
+one begins with a coarse invariant, checks the finite abstract system, and if
+a spurious counterexample is found, refines the invariant to rule it out.
+Lesens, Halbwachs, and Raymond~\cite{LHR97} compute invariants for linear
+networks by iterating the composition and using an approximation that
+enforces convergence. Kesten, Pnueli, Shahar, and Zuck~\cite{KPSZ02} developed
+a deductive framework for network invariants, based on abstraction relations
+between systems, and applied it to a range of examples.
+
+\subsection{Counter Abstraction}
+
+The work of~\cite{PXZ02} combines abstraction with
+\emph{$(0,1,\infty)$-counter abstraction}, which tracks for each local state
+whether zero, one, or many processes occupy it. Since the number of local
+states is finite, the abstract system is finite. Its transitions are
+over-approximations of the concrete ones: for instance, when a process leaves
+a local state whose counter is~$\infty$, the counter may become either~$1$
+or remain~$\infty$.
+
+In the running example, the abstract state is a triple of counter values for
+$\Idle$, $\Wait$, and~$\Crit$, and the bad states are those in which the
+counter for~$\Crit$ is~$\infty$. A process can enter~$\Crit$ only if the
+counter for~$\Crit$ is~$0$, which sets it to~$1$, and leaving~$\Crit$ sets it
+back to~$0$. The counter for~$\Crit$ therefore never reaches~$\infty$, and
+mutual exclusion holds in the abstract system, which has at most 27 states.
+
+This finite abstraction is often coarse but captures enough structure to
+verify mutual exclusion and other coordination properties automatically, and
+the abstraction can be systematically refined when needed. The main
+contribution of~\cite{PXZ02} concerns liveness. The abstraction loses the
+identity of processes, so a fairness requirement for each individual process
+cannot be expressed directly. The method adds to the abstract system
+fairness conditions derived from the concrete system, which are strong enough
+to prove properties such as the absence of starvation.
+
+\subsection{Environment Abstraction}
+
+\emph{Environment abstraction}~\cite{CTV06,CTV08} describes the system from
+the point of view of a single reference process. An abstract state consists of
+the local state of the reference process together with the truth values of a
+fixed set of predicates that describe the other processes in relation to it,
+for example whether some process with a smaller index is in its critical
+section, or whether some other process holds a message addressed to the
+reference process. Because all processes are identical, it suffices to
+consider one reference process, and the abstract transition relation can be
+computed once from the template. The
+approach has been applied to mutual exclusion algorithms, such as the Bakery
+and Szymanski protocols, and to cache coherence protocols.
+
+\subsection{Compositional Reasoning for Protocols}
+
+Cache coherence protocols have been a main application of abstraction
+methods. McMillan~\cite{McM01} verified the FLASH protocol for an arbitrary
+number of processors by compositional model checking, combining symmetry,
+case splitting on the involved processors, and abstraction of the remaining
+ones, with lemmas supplied by the user. Chou, Mannava, and Park~\cite{CMP04}
+turned this approach into a simple and widely used method, often called the
+\emph{CMP method}. A few processes are kept concrete, and all others are
+replaced by a single abstract process that can perform any action. This
+abstraction is usually too coarse, and spurious counterexamples are
+eliminated by adding noninterference lemmas, which constrain the actions of
+the abstract process and are themselves verified in the abstract model.
+Talupur and Tuttle~\cite{TT08} showed that many of the required lemmas can be
+derived from the \emph{message flows} of a protocol, the sequences of messages
+exchanged to complete a transaction, which designers typically document.
+
+Predicate abstraction has also been lifted to the parameterized setting.
+\emph{Indexed predicates} contain free variables that range over process
+indices, and the abstraction computes invariants that are universally
+quantified over these variables~\cite{LB07}. This makes it possible to infer
+properties such as ``for every process~$i$, if $i$ is in its critical section
+then the shared lock is held by~$i$''.
+
+\subsection{Thread-Modular Reasoning}
+
+For concurrent programs with an unbounded number of identical threads,
+\emph{thread-modular} reasoning verifies a single thread against an
+assumption on the effect of the other threads, and checks that each thread
+respects this assumption~\cite{FQ03}. Since all threads are identical, a
+single assumption serves for all of them, which makes the method naturally
+parameterized. The precision of thread-modular reasoning can be increased by
+reasoning about~$k$ threads at a time instead of one, which yields a hierarchy
+of increasingly precise proof methods~\cite{HMP17}. \emph{Proof
+spaces}~\cite{FKP15} provide a related framework, in which correctness proofs
+for an unbounded number of threads are built from a finite set of Hoare
+triples that are combined using rules that exploit the symmetry of the
+threads.
+
+\subsection{Relation to View Abstraction}
+
+The network invariant approach is closely related to view abstraction
+(Section~\ref{sec:cutoff}) in spirit: both methods replace the unbounded
+environment of a process by a finite abstract summary. The key difference is
+in how that summary is constructed and updated. A network invariant is a
+single process that must be supplied, or computed and refined, as a separate
+object, and its validity is checked by induction; view abstraction
+constructs the summary on the fly from the concrete reachability analysis,
+refining it incrementally as the precision parameter~$k$ increases. Counter
+abstraction and environment abstraction lie in between: the abstract domain is
+fixed in advance, but the abstract system is computed automatically from the
+template.

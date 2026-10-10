@@ -1,0 +1,96 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper,
+            top=60pt, bottom=60pt,
+            left=146pt, right=146pt]{geometry}
+\usepackage[expansion=false]{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{cite}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,arrows.meta,calc}
+
+% ── Hyperref ──────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=false,
+  hidelinks,
+  pdftitle={Parameterized Verification},
+  pdfauthor={},
+}
+
+% ── LNCS-like section formatting (all black) ──────────────────────────────────
+\titleformat{\section}
+  {\normalfont\large\bfseries}{\thesection}{1em}{}
+\titlespacing{\section}{0pt}{14pt plus 2pt minus 2pt}{6pt}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
+\titlespacing{\subsection}{0pt}{10pt plus 2pt minus 2pt}{4pt}
+
+% ── LNCS-like paragraph layout ────────────────────────────────────────────────
+\setlength{\parindent}{12pt}
+\setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{1.5em}
+
+% ── Notation ──────────────────────────────────────────────────────────────────
+% Local states of the running example (idle, waiting, critical).
+\newcommand{\Idle}{\mathsf{i}}
+\newcommand{\Wait}{\mathsf{w}}
+\newcommand{\Crit}{\mathsf{c}}
+% Token-passing example (token, no token).
+\newcommand{\Tok}{\mathsf{t}}
+\newcommand{\NoTok}{\mathsf{n}}
+% Quantum notation.
+\newcommand{\ket}[1]{|#1\rangle}
+% Sets of configurations.
+\newcommand{\Init}{\mathit{Init}}
+\newcommand{\Bad}{\mathit{Bad}}
+\newcommand{\Pre}{\mathit{Pre}}
+\newcommand{\Post}{\mathit{Post}}
+% Upward closure.
+\newcommand{\upc}[1]{{\uparrow}#1}
+
+\bibliographystyle{alpha}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+% ── Title block ───────────────────────────────────────────────────────────────
+\begin{center}
+  {\Large\bfseries Parameterized Verification}
+\end{center}
+
+\input{sections/abstract}
+
+\vspace{16pt}
+
+% ── Body: one file per section ────────────────────────────────────────────────
+\input{sections/introduction}
+\input{sections/preliminaries}
+\input{sections/early-foundations}
+\input{sections/cutoff}
+\input{sections/regular-model-checking}
+\input{sections/abstraction-network-invariants}
+\input{sections/deductive}
+\input{sections/smt}
+\input{sections/weak-memory}
+\input{sections/quantum}
+\input{sections/industrial}
+\input{sections/relations}
+\input{sections/conclusion}
+
+% ── Bibliography ──────────────────────────────────────────────────────────────
+{\small
+\bibliography{refs}
+}
+
+\end{document}

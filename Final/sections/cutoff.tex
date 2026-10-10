@@ -1,0 +1,201 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Cutoff Methods and Dynamic Cutoffs}
+\label{sec:cutoff}
+% ═════════════════════════════════════════════════════════════════════════════
+
+A central idea in parameterized verification is the \emph{cutoff theorem}.
+The observation behind it is that, for certain classes of systems, one does
+not need to verify infinitely many instances. Instead, it
+suffices to verify systems up to some finite bound, the cutoff, and
+correctness for all larger instances follows automatically~\cite{EN95,EK00}.
+
+Intuitively, this works because processes in many symmetric systems are
+interchangeable. If the behavior of a system with~$n$ processes can be
+faithfully represented by a system with at most~$k$ processes (the cutoff),
+then verifying the $k$-process system is enough. Cutoff results have been
+established for important classes such as token-passing rings, guarded
+protocols, and systems where processes communicate in restricted ways. This
+section first presents such \emph{static} cutoffs, and then \emph{dynamic}
+cutoffs, which are discovered during verification.
+
+\subsection{Static Cutoffs}
+
+We say that a number~$k$ is a \emph{cutoff} for a class of parameterized
+systems and properties if, for every system and every property in the class,
+the property holds for all instances of the system whenever it holds for all
+instances of size at most~$k$. A cutoff theorem reduces parameterized
+verification to a finite number of finite-state model checking problems, which
+can be solved with standard tools. The cutoff typically depends on the class
+of systems, on the number of process indices mentioned in the property, and
+sometimes on the size of the process template.
+
+\paragraph{Token rings.}
+Emerson and Namjoshi~\cite{EN95} studied rings of identical processes in which
+a single token, carrying no data, is passed from each process to its neighbor.
+They showed that properties in indexed temporal logic that refer to a fixed
+number of processes have a cutoff that is a small constant, independent of the
+process template. The reason is that a process in a token ring observes the
+rest of the ring only through the arrival and departure of the token, and from
+the point of view of a few processes, a large ring behaves like a small one in
+which the remaining processes have been merged. The result was later extended
+from rings to other network topologies by decomposing a network into small
+fragments~\cite{CTTV04}, and the existence of cutoffs for token-passing systems
+has been characterized in terms of the topology and the specification
+logic~\cite{AJKR14}.
+
+\paragraph{Guarded protocols.}
+Emerson and Kahlon~\cite{EK00} considered systems of identical processes whose
+transitions are guarded by conditions on the other processes. A guard is
+\emph{conjunctive} if it requires all other processes to be in a given set of
+local states, and \emph{disjunctive} if it requires at least one other process
+to be in such a set. They established cutoffs that grow linearly with the
+number of local states of the template. For disjunctive guards, the argument
+is a simulation: in a run of a large instance, each guard needs only one
+witness, and for each local state that occurs in the run it suffices to keep
+one process that reaches this state and then stays there, so that it can serve
+as a witness whenever needed. A small instance with these extra processes can
+reproduce the behavior of the processes mentioned in the property. For conjunctive guards, the argument uses projection instead:
+removing processes can only make a conjunctive guard easier to satisfy, so the
+projection of a run of a large instance onto a subset of its processes is a
+run of a smaller instance. For safety properties this argument is direct,
+while liveness properties require more care, since the projection of a fair
+run need not be fair, and deadlocks of the large instance need not appear in
+the small one. The cutoffs were later sharpened, and extended to fairness and
+deadlock detection~\cite{AJK16}, and specialized cutoff methods were developed
+for cache coherence protocols~\cite{EK03}.
+
+The running example of Section~\ref{sec:running} is a guarded protocol: the
+transition from~$\Wait$ to~$\Crit$ has the conjunctive guard that all other
+processes are in $\Idle$ or~$\Wait$. If two processes are in~$\Crit$ at the
+same time in a run of some instance, then the projection of the run onto these
+two processes is a run of the instance of size two that violates mutual
+exclusion. Checking the instance of size two, which has only nine
+configurations, is therefore enough to establish mutual exclusion for all
+sizes.
+
+\paragraph{Limitations.}
+Static cutoff theorems are attractive because they reduce the problem to
+standard model checking. However, the bound~$k$ is fixed ahead of time and must
+be established before verification begins. This can be limiting: the cutoff
+may be large, difficult to compute, or may not exist at all for systems with
+richer interaction patterns or more complex topologies. Moreover, each cutoff
+theorem covers a specific class of systems, and a protocol that falls slightly
+outside the class, for instance because it combines conjunctive guards with
+shared variables, is not covered.
+
+\subsection{Dynamic Cutoffs and View Abstraction}
+
+\emph{Dynamic cutoff methods} address these limitations by allowing the
+abstraction boundary to be determined adaptively, during the verification
+process itself, rather than fixed in advance. A well-developed technique in
+this family is \textbf{view abstraction}~\cite{AHH13,AHH16}.
+Rather than committing to a single small representative system upfront, the
+method reasons about what a process can \emph{observe} about the rest of the
+system, and uses those local observations to construct an on-the-fly
+abstraction.
+
+The starting point is to model the global state of an $n$-process system as a
+configuration: a word of local process states, as in
+Section~\ref{sec:prelim}. A \emph{view} of size~$k$ is a subword of length~$k$
+of a configuration, that is, a projection of the configuration onto a subset
+of~$k$ processes that preserves their order. Instead of tracking full
+configurations (whose length varies with~$n$), the method tracks the set of
+all views of size up to~$k$ that are reachable across \emph{any} instance of
+the system.
+
+For a given precision parameter $k \in \mathbb{N}$, the framework runs two
+procedures in parallel. The first is an \emph{under-approximation}: it
+performs concrete reachability analysis on instances of fixed size up to~$k$,
+and reports a bug if a bad configuration is found. The second is an
+\emph{over-approximation} based on abstract interpretation. We write
+$\alpha_k$ for the abstraction function, which maps a configuration to its set
+of subwords of size up to~$k$. We write $\gamma_k$ for the corresponding
+concretization function, which maps a set of views to the set of all
+configurations whose subwords of size up to~$k$ all belong to the given set of
+views. A fixpoint $V_k$ is then computed over
+views using an abstract post operator. The key soundness property is that the
+set of reachable configurations~$R$ satisfies $R \subseteq \gamma_k(V_k)$ for
+all~$k$, and the approximation becomes tighter as $k$ grows:
+$\gamma_{k+1}(V_{k+1}) \subseteq \gamma_k(V_k)$.
+
+An important observation for the implementation is that the abstract post
+operator can be computed using only concrete configurations of size up to $k{+}1$, rather than
+the full (infinite) concretization. This is because the witnesses required to
+enable a global transition consist of a single extra process; accommodating
+one additional process beyond the view size is always sufficient. This makes
+the fixpoint computation entirely finite and automatic.
+
+If the over-approximation establishes $\gamma_k(V_k) \cap \Bad = \emptyset$,
+the system is declared safe. If the under-approximation finds a reachable bad
+configuration, the system is declared unsafe. In either case, the current~$k$
+is a \emph{dynamic cutoff}, a point discovered during verification beyond
+which the search need not continue. If neither procedure is conclusive, the
+precision is increased by incrementing~$k$ and the analysis is repeated.
+
+\paragraph{The running example.}
+Consider the running example with $k = 1$. The views of size one are single
+local states, and all three local states $\Idle$, $\Wait$, and~$\Crit$ are
+reachable. The concretization of this set of views contains every
+configuration, including $\Crit\Crit$, so the over-approximation cannot prove
+mutual exclusion, and the under-approximation, which only explores the
+instance of size one, finds no bug. The precision is therefore increased to $k
+= 2$.
+
+With $k = 2$, the analysis starts from the views of the initial
+configurations, namely $\Idle$ and $\Idle\Idle$. The abstract post operator
+considers the configurations of size at most three whose views are all in the
+current set, applies the transitions, and collects the views of the results.
+In the first rounds, the transition from $\Idle$ to $\Wait$ produces the views
+$\Wait$, $\Idle\Wait$, $\Wait\Idle$, and $\Wait\Wait$, and the transition from
+$\Wait$ to $\Crit$ then produces $\Crit$, $\Idle\Crit$, $\Crit\Idle$,
+$\Wait\Crit$, and $\Crit\Wait$. The view $\Crit\Crit$ is never produced: to
+produce it, a process in~$\Wait$ would have to move to~$\Crit$ in a
+configuration of size at most three that already contains a process
+in~$\Crit$, and the guard forbids this. The fixpoint~$V_2$ therefore consists
+of all words of length at most two except $\Crit\Crit$. Its concretization is
+the set of configurations with at most one process in~$\Crit$, which is
+disjoint from the bad configurations. The method thus proves mutual exclusion
+for all sizes, with dynamic cutoff~$2$.
+
+\paragraph{Termination and applications.}
+The procedure is guaranteed to terminate whenever the set of reachable
+configurations is downward-closed with respect to the subword ordering, as
+defined in Section~\ref{sec:wqo}. It also terminates for \emph{monotonic
+systems} in the sense of Section~\ref{sec:wqo} when the bad configurations
+form an upward-closed set. In that case, safety depends only on the downward
+closure of the reachable set, which is closed under the transitions and is
+represented exactly by views of bounded size. Monotonic systems cover a broad
+and well-studied class, including lossy channel systems, Petri nets (where the
+method solves the coverability problem), and timed Petri nets. The running
+example is not monotonic, but its reachable set, the set of configurations
+with at most one process in~$\Crit$, is downward-closed, so the procedure
+terminates as well. For Burns' mutual exclusion protocol, the method likewise terminates at~$k =
+2$: already with two-process views it can be shown that no bad configuration
+is reachable for any system size.
+
+View abstraction has been successfully applied to a range of protocols,
+including mutual exclusion algorithms such as the fine-grained version of
+Szymanski's protocol, a benchmark that, to the knowledge of the authors
+of~\cite{AHH16}, had not been verified automatically by other methods, as well as cache coherence protocols and distributed
+systems with complex process interactions. The framework extends naturally to
+other process topologies such as multisets, rings, and trees, and to settings
+where global transitions are not assumed to be atomic~\cite{AHH13,AHH16}.
+Further refinements of the abstraction, which take into account the context in
+which a process takes a step, have been developed in~\cite{AHH14}.
+
+Other dynamic approaches pursue the same goal by different means. Kaiser,
+Kroening, and Wahl~\cite{KKW10} consider programs in which an unbounded number
+of threads execute the same code over shared variables. They explore instances
+of increasing size and detect, during the exploration, a point beyond which
+additional threads cannot reach new local states. Like view abstraction, the
+method determines the cutoff from the program at hand instead of from a
+general theorem.
+
+Together, static cutoff theorems and dynamic approaches like view abstraction
+form a complementary toolkit: static cutoffs offer clean theoretical
+guarantees for specific protocol families, while dynamic methods
+provide greater flexibility and automation for protocols that fall outside
+those families. The idea of reasoning about a parameterized system through
+its small instances also reappears in the invisible invariants method of
+Section~\ref{sec:deductive} and in the small-model properties of the decidable
+logics used by SMT-based tools in Section~\ref{sec:smt}.

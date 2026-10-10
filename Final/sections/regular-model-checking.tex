@@ -1,0 +1,226 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Regular Model Checking}
+\label{sec:rmc}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Regular Model Checking (RMC) is a symbolic framework for verifying
+parameterized and infinite-state systems by representing both sets of
+configurations and transition relations using the theory of regular languages
+and finite automata~\cite{KW01,BW98,BJNT00}. The key idea is that regular sets
+serve as an efficient symbolic representation of infinite state spaces,
+playing a role analogous to that of Binary Decision Diagrams (BDDs) in symbolic
+model checking of finite-state systems~\cite{AJNS04,Abd12,Abd21}.
+
+\subsection{The Framework}
+
+In its basic form, RMC represents a system as follows. A \emph{configuration}
+is a finite word over a fixed alphabet~$\Sigma$, where each symbol encodes the
+local state of one component (a process, a stack element, a channel message,
+etc.). Sets of configurations, including the initial set and the set of bad
+configurations, are represented as regular languages over~$\Sigma$. The
+transition relation is encoded as a \emph{length-preserving finite-state
+transducer}~$T$ over pairs $(a, a') \in \Sigma \times \Sigma$: the transducer
+reads two words of the same length in parallel, letter by letter, and accepts
+the pair $(w, w')$ if and only if the system can move from configuration~$w$
+to configuration~$w'$ in one step.
+
+This simple setup already captures a wide variety of models. Parameterized
+systems consisting of an arbitrary number of finite-state processes in a
+linear or ring topology can be modeled by letting each position in the word
+represent one process. Systems operating on unbounded queues, stacks, or
+integer variables can similarly be encoded by letting word positions represent
+data structure contents. The length-preserving constraint on the transducer is
+not a restriction for safety verification: for parameterized systems it simply
+means that the number of processes is fixed at the start of a run, while
+being arbitrary across runs.
+
+\paragraph{A token-passing example.}
+Consider a linear array of processes in which a single token is passed from
+left to right. Each process is either holding the token or not holding it. We
+write $\Tok$ and~$\NoTok$ for these two local states. The initial configurations are those in which
+the leftmost process holds the token, that is, the regular language
+$\Tok\NoTok^*$. In one step, the process holding the token passes it to its
+right neighbor. Figure~\ref{fig:transducer} shows a transducer~$T$ for this
+transition relation. It copies a prefix of processes without the token, then
+reads the pair $(\Tok,\NoTok)$ for the process that gives the token away,
+followed by the pair $(\NoTok,\Tok)$ for the neighbor that receives it, and
+finally copies the remaining processes. The safety property states that
+exactly one process holds the token, so the bad configurations form the
+regular language of words with no~$\Tok$ or with at least two occurrences
+of~$\Tok$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
+    node distance=2.3cm,semithick,
+    every state/.style={minimum size=7mm,inner sep=1pt}]
+  \node[state,initial,initial text={}] (q0) {$q_0$};
+  \node[state] (q1) [right=of q0] {$q_1$};
+  \node[state,accepting] (q2) [right=of q1] {$q_2$};
+  \path (q0) edge[loop above] node {$(\NoTok,\NoTok)$} (q0)
+        (q0) edge node {$(\Tok,\NoTok)$} (q1)
+        (q1) edge node {$(\NoTok,\Tok)$} (q2)
+        (q2) edge[loop above] node {$(\NoTok,\NoTok)$} (q2);
+\end{tikzpicture}
+\caption{A length-preserving transducer for passing the token one position to
+the right. Each transition reads a letter of the current configuration
+together with a letter of the next configuration.}
+\label{fig:transducer}
+\end{figure}
+
+\paragraph{Reachability.}
+Let $\Init$ and $\Bad$ be the regular sets of initial and bad
+configurations. We write $T^*$ for the reflexive transitive closure of the
+transducer relation, and $\Init \circ T^*$ for the set of configurations
+reachable from~$\Init$. Safety verification reduces to checking whether
+$(\Init \circ T^*) \cap \Bad = \emptyset$. Liveness verification reduces to a
+\emph{repeated reachability} problem: checking whether there exists an
+infinite computation from~$\Init$ through~$T$ that visits a set of accepting
+configurations~$F$ infinitely often.
+
+In the token-passing example, the relation~$T^k$, obtained by composing~$T$
+with itself $k$~times, moves the token exactly~$k$ positions to the right, and
+each $T^k$ is recognized by a transducer with $k+2$ states. Iterating~$T$ one
+step at a time therefore produces an infinite sequence of growing transducers
+and never reaches a fixpoint. The transitive closure~$T^+$, however, is
+regular: it moves the token any positive number of positions to the right,
+and it is recognized by the transducer of Figure~\ref{fig:transducer} with an
+additional loop labeled $(\NoTok,\NoTok)$ on the state~$q_1$. The reachable
+set is then $\NoTok^*\Tok\NoTok^*$, which is disjoint from the bad
+configurations.
+
+\subsection{Computing Transitive Closures}
+
+The central computational challenge is computing $T^+$ (or $\Init \circ
+T^*$) effectively. Since the problem is undecidable in general, no method can
+succeed on all inputs, and naively iterating the transducer, computing $T^1,
+T^2, T^3, \ldots$, does not converge, as the example shows. The standard
+approach is to use \emph{acceleration} or \emph{widening} techniques that jump
+directly to a representation of~$T^+$.
+
+\paragraph{Acceleration by quotienting.}
+Acceleration is typically based on \emph{quotienting}: one finds an
+equivalence relation~$\simeq$ on the states of a finite approximation~$T^n$,
+merges equivalent states to obtain a quotient transducer $T^n/{\simeq}$, and
+checks whether the result characterizes~$T^+$. The difficulty is that
+quotienting generally enlarges the accepted language: $L(T^n) \subseteq
+L(T^n/{\simeq})$, often strictly. The quotient is therefore taken on the
+\emph{history transducer}, a canonical infinite transducer built as the
+union of all $T^n$ for $n \geq 1$, where each state records the full sequence
+of $T$-states visited during product construction. A key theoretical
+contribution is the identification of equivalence relations on the states of
+the history transducer whose quotient accepts exactly~$T^+$. Such relations
+can be derived from forward and backward bisimulations, and in later work from
+simulations, on these states. When the resulting quotient is finite, it is a
+transducer for~$T^+$~\cite{AJNO02,AJNO03}. Related constructions iterate
+transducers by identifying equivalent states with bisimulation-like
+relations~\cite{DLS01}.
+
+\paragraph{Extrapolation and abstraction.}
+A different idea is to compute a few iterates $T^1, \ldots, T^k$, detect a
+regular pattern of growth between consecutive iterates, and
+\emph{extrapolate} it to a guess of the limit, which is then checked for
+correctness~\cite{BLW03,BT02}. In the token-passing example, the transducer
+for $T^{k+1}$ has one more state, and one more $(\NoTok,\NoTok)$ step between
+the pair that gives the token away and the pair that receives it, than the
+transducer for~$T^k$. Extrapolation turns this repeated step into the loop
+on~$q_1$. \emph{Abstract regular model
+checking}~\cite{BHV04} gives up exactness instead: it computes reachable sets
+by alternately applying the transducer and abstracting the resulting automata,
+for example by merging states that accept the same words up to a given length.
+The abstraction guarantees termination, and spurious counterexamples are used
+to refine it.
+
+\paragraph{Learning regular invariants.}
+For safety verification, it is not necessary to compute the reachable set
+exactly: it suffices to find a regular set that contains the initial
+configurations, is closed under the transducer, and is disjoint from the bad
+configurations. Such a \emph{regular inductive invariant} can be searched for
+with techniques from automata learning, in which a learner proposes candidate
+automata and a teacher checks the three conditions and returns
+counterexamples~\cite{HV05,NJ13,CHLR17}. Checking whether a given automaton is
+an inductive invariant is a decidable problem on automata, so the learning
+approach replaces the computation of a fixpoint by a sequence of decidable
+checks.
+
+\paragraph{Extensions.}
+Beyond the linear word model, the framework extends to configurations
+represented as trees, enabling verification of systems with hierarchical or
+recursive structure~\cite{AJMO02,BT02}. Liveness properties can be handled by
+extending the framework to infinite words~\cite{BLW05}, and regular proofs of
+liveness have been studied for randomized parameterized systems~\cite{LR16}.
+RMC has been successfully applied to token-passing systems, mutual exclusion
+algorithms, and systems with unbounded communication channels, stacks, and
+integer variables~\cite{AJNS04,Abd12}.
+
+\subsection{Monotonic Abstraction}
+
+While the transducer-based approach is general, it can be
+computationally expensive and may not scale to larger protocols. An important
+line of work within the RMC framework addresses this by replacing the full
+power of regular languages with a lighter symbolic representation based on
+\emph{upward-closed sets}, in a technique known as \emph{monotonic
+abstraction}~\cite{ADHR07,Abd12}. The approach targets parameterized systems
+with a linear process topology and global transitions (both universal and
+existential). Configurations are again words over the process state alphabet,
+and the subword ordering~$\preceq$ of Section~\ref{sec:wqo} plays a central
+role. Bad configurations are characterized by upward-closed sets with respect
+to this ordering: if a configuration is bad, then any larger configuration
+(with more processes) is also bad. Such sets have a finite symbolic
+representation in terms of their minimal elements, making them far more
+tractable than arbitrary regular sets.
+
+The core idea is to replace the concrete transition relation~$\to$ with an
+abstract relation~$\to_A$ that over-approximates~$\to$ and is monotone with
+respect to~$\preceq$. Local and existential transitions are already monotone
+and require no approximation. Universal transitions, where a process may
+move only if all processes in its context satisfy some condition, are
+\emph{not} monotone, since adding more processes to a configuration may
+violate the universal condition and disable the transition. The abstraction
+handles this by allowing a configuration to silently drop processes that
+obstruct the transition, effectively making the universal condition vacuously
+satisfiable. Since $\to_A$ is an over-approximation, any safety property
+that holds in the abstract model is guaranteed to hold in the concrete one.
+
+Safety verification then proceeds by \emph{backward reachability analysis}, as
+in Section~\ref{sec:wqo}. Starting from the upward-closed set $\Bad$ of bad
+configurations, one computes the sequence $U_0 = \Bad$, $U_{i+1} = U_i \cup
+\Pre_A(U_i)$, where $\Pre_A$ is the predecessor operator under~$\to_A$.
+Because $\to_A$ is monotone, each $U_i$ remains upward-closed and can be
+represented by a finite set of generators. Termination is guaranteed by
+Higman's lemma: the subword ordering~$\preceq$ is a well-quasi-ordering on
+words, so every ascending chain of upward-closed sets stabilizes after finitely
+many steps. The algorithm terminates when no new generators (up to
+subsumption) are produced; if none of the generators represents an initial
+configuration, the system is safe.
+
+\paragraph{The running example.}
+In the running example, the abstract relation allows a process in~$\Wait$ to
+move to~$\Crit$ in any configuration, after deleting the processes that are
+in~$\Crit$. For instance, $\Wait\Crit \to_A \Crit$. Backward reachability
+starts from the single generator $\Crit\Crit$ and computes the
+configurations from which one abstract step leads to a configuration with at
+least two processes in~$\Crit$. The steps from $\Idle$ to $\Wait$ and from
+$\Crit$ to $\Idle$ do not create processes in~$\Crit$, so a configuration
+that reaches $\upc{(\Crit\Crit)}$ by one of these steps already has at least
+two processes in~$\Crit$. The abstract step from $\Wait$ to
+$\Crit$ deletes all other processes in~$\Crit$, so it always results in a
+configuration with exactly one process in~$\Crit$. Hence $\Pre_A$ adds no new
+generators, the fixpoint is $\upc{(\Crit\Crit)}$, and since no initial
+configuration $\Idle^n$ contains $\Crit\Crit$, the protocol is safe. In this
+example the abstraction loses no precision with respect to the property. For
+protocols in which a process inspects the others one at a time, such as
+Burns' and Szymanski's algorithms, the same approach applies to the
+non-atomic versions of the global conditions~\cite{ABDR08}.
+
+\paragraph{Extensions and refinement.}
+Monotonic abstraction has been extended to processes with numerical variables
+whose values are compared using gap-order constraints~\cite{ADR09}, to tree
+topologies, broadcast communication, and binary rendez-vous, and to systems
+running under weak memory models (Section~\ref{sec:wmm}). Since the
+abstraction may introduce spurious counterexamples, it has been combined with
+a counterexample-guided refinement loop that restricts the deletions allowed
+in the abstract transitions~\cite{ACDHHR10}. The connection between monotonic
+abstraction and well-structured transition systems provides general
+decidability results for the abstract systems, for classes of systems that
+extend well beyond the purely parameterized setting~\cite{Abd10}.

@@ -1,0 +1,32 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Conclusion and Open Problems}
+\label{sec:conclusion}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Parameterized verification asks for guarantees that hold for every number of
+components, a question that is undecidable in general. The techniques surveyed
+in this chapter respond to this difficulty in different ways, but the same few
+ideas recur across all of them: a finite symbolic
+representation of infinite families of states, monotonicity with respect to a
+well-quasi-ordering, and the observation that the behavior of a large instance
+is often already visible in a small one. The applications to weak memory
+models and to quantum circuits show that these ideas carry over to settings
+that look very different from the protocols for which they were first
+developed.
+
+Several problems remain open or only partially solved. Liveness properties
+under fairness are much less well supported than safety properties, both in
+theory and in tools, since abstractions that preserve safety often lose the
+information needed for fairness. For weak memory models, parameterized
+verification is well understood for TSO and some of its extensions, but the
+more relaxed models of ARM and POWER processors, and the language-level models
+of C11 and Java, are only partly covered. For distributed protocols, the
+automatic inference of invariants with alternating quantifiers, which are
+needed for many consensus protocols, remains difficult, and current tools
+handle it by restricting the logic or by relying on the user. In the quantum
+setting, the automata-based approach covers parameterized circuits, and its
+extension to programs with measurement, classical control, and noise is a
+natural next step. Finally, the parameterized view applies to further classes of
+systems built from many copies of the same component, such as multi-agent
+systems and large-scale distributed services, where the same questions about
+correctness for any number of components arise.

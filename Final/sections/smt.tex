@@ -1,0 +1,153 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{SMT-Based Methods}
+\label{sec:smt}
+% ═════════════════════════════════════════════════════════════════════════════
+
+The rise of powerful Satisfiability Modulo Theories (SMT) solvers over the
+past two decades has opened new avenues for parameterized verification.
+SMT-based methods encode system states, transitions, and properties as logical
+formulas and use highly optimized solvers to reason about them
+automatically~\cite{BSST09}. Their main advantage over purely deductive
+approaches is that the invariant search is largely automated; their main
+advantage over finite-state model checking is that sets of states are
+represented by formulas over rich theories, which makes them applicable to
+systems with rich data and large process counts.
+
+\subsection{Array-Based Systems}
+
+In \emph{array-based systems}~\cite{GR10,GS10}, the parameterized state is
+modeled as a collection of arrays indexed by process identifiers, and
+quantified formulas express properties over all processes simultaneously. For
+the running example, a single array~$s$ maps each process index to its local
+state. The initial condition is the formula stating that for every index~$i$,
+$s[i] = \Idle$. The transition from~$\Wait$ to~$\Crit$ is described by a
+formula stating that there is an index~$k$ with $s[k] = \Wait$, that every
+index $j \neq k$ satisfies $s[j] \neq \Crit$, and that the new array is
+obtained from~$s$ by setting $s[k]$ to~$\Crit$. The bad configurations are
+described by the formula stating that there are two distinct indices $i$
+and~$j$ with $s[i] = \Crit$ and $s[j] = \Crit$.
+
+The MCMT tool~\cite{GS10} implements model checking for array-based systems
+via backward reachability in a quantified fragment of first-order logic, using
+SMT solvers to discharge the fixpoint conditions. The sets of configurations
+encountered during backward reachability are represented by existentially
+quantified formulas, such as the formula for the bad configurations above. The
+predecessors of such a formula are again existentially quantified, provided
+that universal guards are handled appropriately; a common treatment
+instantiates the universal quantifier only with the indices mentioned in the
+formula, which over-approximates the system in a way that closely corresponds
+to monotonic abstraction (Section~\ref{sec:rmc}). The test that a new formula
+adds no configurations to those already found reduces to the satisfiability of
+a formula with an $\exists^*\forall^*$ quantifier prefix, which SMT solvers
+handle by instantiation.
+
+In the running example, backward reachability starts from the formula for the
+bad configurations. A step from~$\Wait$ to~$\Crit$ by some process~$k$ can
+only lead to a bad configuration if the other process in~$\Crit$ was already
+there before the step, which contradicts the guard. The other transitions
+lead from a configuration to a bad one only if the configuration is itself
+bad. The fixpoint is therefore reached immediately, and since no initial
+configuration satisfies the formula, the system is safe.
+
+This approach handles systems in which each process has a local state drawn
+from an arbitrary (possibly infinite) domain, modeled as an interpreted theory
+in the SMT solver. Termination of backward reachability is not guaranteed in
+general, but it is guaranteed for classes of systems in which the models of
+the existential formulas, viewed as finite structures, are well-quasi-ordered,
+which connects the approach to the theory of Section~\ref{sec:wqo}~\cite{GR10}.
+The Cubicle model checker~\cite{CGKMZ12} follows the same principles, with a
+parallel implementation and a technique that uses finite instances of the
+system to guess approximations of the reachable states, with backtracking
+when an approximation turns out to be too coarse~\cite{CGKMZ13}. Array-based
+methods have seen success on cache coherence and distributed protocols, and
+have connections to the decidable array property fragments studied in program
+verification~\cite{BMS06}.
+
+\subsection{IC3/PDR and Quantified Invariants}
+
+A prominent line of work in this space is \emph{IC3/PDR} (Property Directed
+Reachability), originally developed for finite-state hardware
+verification~\cite{Bra11,EMB11} and later extended to the parameterized
+setting through quantified invariant inference. IC3/PDR works by incrementally
+constructing an inductive strengthening of the safety property. It maintains
+a sequence of formulas that over-approximate the sets of states reachable
+within increasing numbers of steps. It strengthens these formulas by blocking
+states from which a bad state can be reached, propagates facts from each
+formula to the next, and stops when two consecutive formulas coincide, at
+which point they form an inductive invariant.
+In the parameterized setting, these formulas are universally quantified over
+process identifiers, and SMT reasoning over the resulting quantified theories
+replaces the finite propositional checks of the original algorithm.
+
+Karbyshev et al.~\cite{KBIRS17} developed a variant of PDR that infers
+universally quantified invariants. The \emph{diagram} of a state is an
+existential formula that describes the state up to the identity of its
+elements. When a state must be blocked, the algorithm blocks its diagram.
+Blocking a diagram excludes the state together with all larger states that
+contain it, which makes the method similar to backward reachability over
+upward-closed sets. When it terminates, the algorithm returns a
+counterexample, a universal inductive invariant, or a proof that no such
+invariant exists.
+Gurfinkel, Shoham, and Meshman~\cite{GSM16} exploit the symmetry of
+parameterized systems to reduce the inference of quantified invariants to the
+inference of invariants for a small number of representative processes, a task
+that can be delegated to an SMT-based model checker.
+
+\subsection{Decidable Logics and Ivy}
+
+Tools such as Ivy~\cite{PMPSS16} build on these ideas to provide interactive and automated frameworks for specifying and verifying
+distributed protocols. Ivy allows users to specify systems in a first-order
+language and restricts the verification conditions to the \emph{effectively
+propositional} fragment EPR, in which formulas have a quantifier prefix of the
+form $\exists^*\forall^*$ and contain no function symbols, extended with
+function symbols whose use satisfies an acyclicity condition. Satisfiability
+in this fragment is decidable, and every satisfiable formula has
+a finite model whose size is bounded by the formula. Consequently, every
+failed check yields a small, finite counterexample, which the user can
+inspect, as described in Section~\ref{sec:deductive}. The bound on the size
+of models plays a role similar to a cutoff: it limits the number of processes,
+messages, and values that need to be considered.
+
+Many protocols do not fit into EPR directly. Padon et al.~\cite{PLSS17}
+showed that complex consensus protocols, including several variants of Paxos,
+can be verified within EPR by introducing derived relations that keep the
+verification conditions in the decidable fragment. In practice, this workflow has successfully verified a range of
+distributed protocols, including variants of Paxos, two-phase commit, and
+leader election. The inference of invariants for such protocols has also been
+automated. One approach generalizes invariants of small finite instances to
+quantified invariants and checks them for all sizes~\cite{MGJKKS19}, in the
+spirit of invisible invariants; another searches for quantified formulas that
+separate reachable states from states that lead to an error~\cite{KPIA20}.
+
+\subsection{Threshold-Based Distributed Algorithms}
+
+Fault-tolerant distributed algorithms form a further class of parameterized
+systems, in which the parameters include not only the number~$n$ of processes
+but also an upper bound~$t$ on the number of faulty processes. Processes
+typically wait until they have received messages from more than a threshold
+of other processes, such as $(n+t)/2$, before taking a step. Such algorithms were first
+verified by abstraction-based parameterized model checking~\cite{JKSVW13},
+and have since been modeled as \emph{threshold automata}, in which
+transitions are guarded by linear constraints over message counters and
+parameters~\cite{KVW17}. A key result is a \emph{short counterexample
+property}: if a threshold automaton violates a safety or liveness property for
+some values of the parameters, then it does so in a run whose length, measured
+in a suitable sense, is bounded independently of the parameters. Bounded model
+checking with an SMT solver over the parameters then suffices for all
+parameter values~\cite{KVW17,KLVW17}.
+
+\subsection{Discussion}
+
+The relationship between SMT-based methods and the other approaches in this
+chapter is instructive. SMT methods can be seen as automating the invariant
+discovery step that deductive methods (Section~\ref{sec:deductive}) leave to
+the user, while using a logical representation of state that complements the
+regular-language and upward-closed-set representations of
+Section~\ref{sec:rmc}: logical formulas easily
+express data and arithmetic, while automata easily express the ordering of
+processes in a configuration. The tradeoff is decidability: the quantified
+theories used by SMT-based tools are generally undecidable, and the tools rely
+on heuristics, user interaction, or restriction to decidable fragments to
+terminate. SMT-based methods are thus more automatic than purely deductive
+approaches, but they lack the termination guarantees of cutoff and monotonic
+abstraction methods.
