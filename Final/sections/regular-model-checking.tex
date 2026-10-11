@@ -3,224 +3,429 @@
 \label{sec:rmc}
 % ═════════════════════════════════════════════════════════════════════════════
 
-Regular Model Checking (RMC) is a symbolic framework for verifying
-parameterized and infinite-state systems by representing both sets of
-configurations and transition relations using the theory of regular languages
-and finite automata~\cite{KW01,BW98,BJNT00}. The key idea is that regular sets
-serve as an efficient symbolic representation of infinite state spaces,
-playing a role analogous to that of Binary Decision Diagrams (BDDs) in symbolic
-model checking of finite-state systems~\cite{AJNS04,Abd12,Abd21}.
+In this section, we consider parameterized systems with a linear topology in
+which the processes are finite-state and a process may communicate with its
+immediate neighbors. Linear topologies are common in parameterized systems,
+where the position of a process may, for instance, reflect its priority
+compared to the other processes. Already for this class of systems, all
+non-trivial verification problems are undecidable. We present the framework
+of \emph{regular model checking}~\cite{KMMPS97,KW01,BW98,BJNT00}, which uses
+regular languages as a uniform representation of sets of configurations, and
+we describe in detail one technique within the framework, namely
+\emph{acceleration} based on quotienting~\cite{AJNO02,AJNO03}.
 
-\subsection{The Framework}
+\subsection{Near-Neighbor Communication}
 
-In its basic form, RMC represents a system as follows. A \emph{configuration}
-is a finite word over a fixed alphabet~$\Sigma$, where each symbol encodes the
-local state of one component (a process, a stack element, a channel message,
-etc.). Sets of configurations, including the initial set and the set of bad
-configurations, are represented as regular languages over~$\Sigma$. The
-transition relation is encoded as a \emph{length-preserving finite-state
-transducer}~$T$ over pairs $(a, a') \in \Sigma \times \Sigma$: the transducer
-reads two words of the same length in parallel, letter by letter, and accepts
-the pair $(w, w')$ if and only if the system can move from configuration~$w$
-to configuration~$w'$ in one step.
+We consider systems that consist of an arbitrary number of finite-state
+processes organized in a linear array. In a \emph{near-neighbor}
+communication, a process communicates with its left or right neighbor, and the
+two processes change their states simultaneously. As an example, we use a
+simple \emph{token-passing protocol}. Initially, the leftmost process owns the
+token. In each step, the process that has the token passes it to its right
+neighbor. The safety property states that at most one process has the token
+at any point during the execution of the system.
 
-This simple setup already captures a wide variety of models. Parameterized
-systems consisting of an arbitrary number of finite-state processes in a
-linear or ring topology can be modeled by letting each position in the word
-represent one process. Systems operating on unbounded queues, stacks, or
-integer variables can similarly be encoded by letting word positions represent
-data structure contents. The length-preserving constraint on the transducer is
-not a restriction for safety verification: for parameterized systems it simply
-means that the number of processes is fixed at the start of a run, while
-being arbitrary across runs.
+Near-neighbor communication leads to undecidability of safety properties. The
+proof is a reduction from the halting problem for Turing machines, in a
+similar manner to the proof for rings~\cite{Suz88}. Given a Turing
+machine~$\mathcal{M}$, the instance of size~$n$ of the system simulates the
+computations of~$\mathcal{M}$ that use at most $n$ tape cells. Each cell is
+represented by one process, whose local state encodes the symbol stored in the
+cell, together with a flag that indicates whether the head of~$\mathcal{M}$
+points to the cell. If the flag is set, the local state also stores the
+control state of~$\mathcal{M}$. Near-neighbor communication is then used to
+move the head, to change the symbol in the current cell, and to change the
+control state. A bad configuration is reachable for some~$n$ if and only if
+$\mathcal{M}$ halts.
 
-\paragraph{A token-passing example.}
-Consider a linear array of processes in which a single token is passed from
-left to right. Each process is either holding the token or not holding it. We
-write $\Tok$ and~$\NoTok$ for these two local states. The initial configurations are those in which
-the leftmost process holds the token, that is, the regular language
-$\Tok\NoTok^*$. In one step, the process holding the token passes it to its
-right neighbor. Figure~\ref{fig:transducer} shows a transducer~$T$ for this
-transition relation. It copies a prefix of processes without the token, then
-reads the pair $(\Tok,\NoTok)$ for the process that gives the token away,
-followed by the pair $(\NoTok,\Tok)$ for the neighbor that receives it, and
-finally copies the remaining processes. The safety property states that
-exactly one process holds the token, so the bad configurations form the
-regular language of words with no~$\Tok$ or with at least two occurrences
-of~$\Tok$.
+\subsection{Words, Relations, and Transducers}
+
+In regular model checking, the behavior of a system is described in three
+steps. First, we fix a finite alphabet in which each symbol represents the
+local state of a process. Second, a configuration is represented by a word,
+where each position describes the state of one process, and sets of
+configurations are represented by finite automata or regular expressions.
+Third, the transition relation is represented by a finite automaton that reads
+pairs of symbols, a so-called \emph{finite-state transducer}. The framework
+makes it possible to use the well-developed algorithms for manipulating
+regular languages, which have been implemented, for example, in the Mona
+tool~\cite{Mona95}.
+
+Let $\Sigma$ be a finite alphabet. We consider \emph{length-preserving}
+relations on words, that is, relations $R \subseteq \Sigma^* \times \Sigma^*$
+such that $u$ and $v$ have the same length whenever $(u,v) \in R$. For a set
+$L \subseteq \Sigma^*$ of words, we write $L \circ R$ for the set of words~$v$
+such that $(u,v) \in R$ for some $u \in L$. For two relations $R_1$ and
+$R_2$, we write $R_1 \circ R_2$ for their composition, which contains the
+pairs $(u,w)$ such that $(u,v) \in R_1$ and $(v,w) \in R_2$ for some word~$v$.
+We define $R^0$ to be the identity relation and $R^{i+1} = R^i \circ R$. The
+transitive closure of~$R$ is the union $R^+$ of all $R^i$ with $i \geq 1$, and
+the reflexive transitive closure is $R^* = R^0 \cup R^+$.
+
+A \emph{transducer} over~$\Sigma$ is a tuple $T = (P, q_0, \Theta, F)$, where
+$P$ is a finite set of states, $q_0 \in P$ is the initial state, $\Theta
+\subseteq P \times (\Sigma \times \Sigma) \times P$ is the transition
+relation, and $F \subseteq P$ is the set of accepting states. We write $q
+\xrightarrow{(a,b)} r$ if $(q,(a,b),r) \in \Theta$. A transducer is a finite
+automaton over the alphabet $\Sigma \times \Sigma$, so it accepts words of
+pairs $(a_1,b_1)(a_2,b_2) \cdots (a_n,b_n)$. We say that $T$ \emph{accepts}
+the pair of words $(a_1 \cdots a_n, b_1 \cdots b_n)$ if it accepts the word
+$(a_1,b_1) \cdots (a_n,b_n)$, and we write $R(T)$ for the length-preserving
+relation that consists of all pairs accepted by~$T$. In regular model
+checking, $R(T)$ is the transition relation of the system. For simplicity, we
+write $R^i(T)$, $R^+(T)$, and $R^*(T)$ for $(R(T))^i$, $(R(T))^+$, and
+$(R(T))^*$. A pair $(u,v)$ belongs to $R^i(T)$ if $u$ can be rewritten
+into~$v$ by $i$ successive runs of~$T$.
 
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
-    node distance=2.3cm,semithick,
-    every state/.style={minimum size=7mm,inner sep=1pt}]
-  \node[state,initial,initial text={}] (q0) {$q_0$};
-  \node[state] (q1) [right=of q0] {$q_1$};
-  \node[state,accepting] (q2) [right=of q1] {$q_2$};
-  \path (q0) edge[loop above] node {$(\NoTok,\NoTok)$} (q0)
-        (q0) edge node {$(\Tok,\NoTok)$} (q1)
-        (q1) edge node {$(\NoTok,\Tok)$} (q2)
-        (q2) edge[loop above] node {$(\NoTok,\NoTok)$} (q2);
+    node distance=1.6cm,semithick,
+    every state/.style={minimum size=6mm,inner sep=1pt}]
+  \node[state,initial,initial text={}] (p0) {};
+  \node[state,accepting] (p1) [right=of p0] {};
+  \path (p0) edge node {$\Tok$} (p1)
+        (p1) edge[loop above] node {$\NoTok$} (p1);
+  \node at ($(p0)!0.5!(p1)+(0,-1.0)$) {(a)};
 \end{tikzpicture}
-\caption{A length-preserving transducer for passing the token one position to
-the right. Each transition reads a letter of the current configuration
-together with a letter of the next configuration.}
+\hspace{1.2em}
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
+    node distance=1.5cm,semithick,
+    every state/.style={minimum size=7mm,inner sep=1pt}]
+  \node[state,initial,initial text={}] (qL) {$q_L$};
+  \node[state] (q) [right=of qL] {$q$};
+  \node[state,accepting] (qR) [right=of q] {$q_R$};
+  \path (qL) edge[loop above] node {$(\NoTok,\NoTok)$} (qL)
+        (qL) edge node {$(\Tok,\NoTok)$} (q)
+        (q) edge node {$(\NoTok,\Tok)$} (qR)
+        (qR) edge[loop above] node {$(\NoTok,\NoTok)$} (qR);
+  \node at ($(qL)!0.5!(qR)+(0,-1.0)$) {(b)};
+\end{tikzpicture}
+\caption{The token-passing protocol. (a) An automaton for the initial
+configurations $\Tok\NoTok^*$. (b) A transducer~$T$ for the transition
+relation.}
 \label{fig:transducer}
 \end{figure}
 
-\paragraph{Reachability.}
-Let $\Init$ and $\Bad$ be the regular sets of initial and bad
-configurations. We write $T^*$ for the reflexive transitive closure of the
-transducer relation, and $\Init \circ T^*$ for the set of configurations
-reachable from~$\Init$. Safety verification reduces to checking whether
-$(\Init \circ T^*) \cap \Bad = \emptyset$. Liveness verification reduces to a
-\emph{repeated reachability} problem: checking whether there exists an
-infinite computation from~$\Init$ through~$T$ that visits a set of accepting
-configurations~$F$ infinitely often.
+\paragraph{The token-passing protocol.}
+For the token-passing protocol, the alphabet is $\Sigma = \{\Tok, \NoTok\}$,
+where $\Tok$ means that the process has the token and $\NoTok$ means that it
+does not. For instance, the word $\NoTok\NoTok\Tok\NoTok\NoTok$ represents a
+configuration with five processes in which the third process has the token.
+The set of initial configurations is given by the regular expression
+$\Tok\NoTok^*$ (Figure~\ref{fig:transducer}(a)): the leftmost process has the
+token, and it is followed by an arbitrary number of processes without the
+token. The transition relation is given by the transducer~$T$ of
+Figure~\ref{fig:transducer}(b). The transducer copies a prefix of processes
+without the token in state~$q_L$, reads the pair $(\Tok,\NoTok)$ for the
+process that gives the token away and the pair $(\NoTok,\Tok)$ for its right
+neighbor, and copies the remaining processes in state~$q_R$. For instance,
+$T$ accepts the word $(\NoTok,\NoTok)(\NoTok,\NoTok)(\Tok,\NoTok)
+(\NoTok,\Tok)(\NoTok,\NoTok)$, which represents the pair
+$(\NoTok\NoTok\Tok\NoTok\NoTok, \NoTok\NoTok\NoTok\Tok\NoTok)$, in which the
+token is passed from the third to the fourth process.
 
-In the token-passing example, the relation~$T^k$, obtained by composing~$T$
-with itself $k$~times, moves the token exactly~$k$ positions to the right, and
-each $T^k$ is recognized by a transducer with $k+2$ states. Iterating~$T$ one
-step at a time therefore produces an infinite sequence of growing transducers
-and never reaches a fixpoint. The transitive closure~$T^+$, however, is
-regular: it moves the token any positive number of positions to the right,
-and it is recognized by the transducer of Figure~\ref{fig:transducer} with an
-additional loop labeled $(\NoTok,\NoTok)$ on the state~$q_1$. The reachable
-set is then $\NoTok^*\Tok\NoTok^*$, which is disjoint from the bad
-configurations.
+\paragraph{Safety.}
+Let $\Init$ be the regular set of initial configurations and $\Bad$ the regular
+set of bad configurations. A safety property is verified by checking that no
+bad configuration is reachable, that is, that
+\[
+(\Init \circ R^*(T)) \cap \Bad = \emptyset .
+\]
+For the token-passing protocol, the bad configurations are those in which at
+least two processes have the token, given by the regular expression $(\Tok +
+\NoTok)^* \Tok (\Tok + \NoTok)^* \Tok (\Tok + \NoTok)^*$. Since $R^*(T) = R^0
+\cup R^+(T)$, it suffices to compute a transducer $T^+$ with $R(T^+) =
+R^+(T)$. The reachable set $\Init \circ R^*(T)$ is then regular and can be
+computed with standard automata constructions, and the intersection with
+$\Bad$ can be checked for emptiness. The transitive closure is also the key
+to verifying liveness properties, where it is used to detect cycles in the
+transition relation~\cite{AJNOS04}.
 
-\subsection{Computing Transitive Closures}
+\subsection{Acceleration}
+\label{sec:acceleration}
 
-The central computational challenge is computing $T^+$ (or $\Init \circ
-T^*$) effectively. Since the problem is undecidable in general, no method can
-succeed on all inputs, and naively iterating the transducer, computing $T^1,
-T^2, T^3, \ldots$, does not converge, as the example shows. The standard
-approach is to use \emph{acceleration} or \emph{widening} techniques that jump
-directly to a representation of~$T^+$.
+In general, the transitive closure $R^+(T)$ is not computable, and it may not
+even be regular. Our goal is a technique that computes a finite-state
+transducer for $R^+(T)$ in the cases where such a transducer exists. A first
+attempt is to compute, for $n = 1, 2, 3, \ldots$, a transducer $T^n$ with
+$R(T^n) = R^n(T)$. For the token-passing protocol, $T^3$ passes the token
+three positions to the right (Figure~\ref{fig:closures}(a)), and the
+transducer for $R^+(T)$ passes the token an arbitrary positive number of
+positions (Figure~\ref{fig:closures}(b)). Computing the approximations $T^n$
+one by one does not converge, since $T^n$ needs $n+2$ states. Instead, we
+\emph{accelerate} the computation in two steps. First, we define an
+infinite-state transducer, the \emph{column transducer}, that accepts
+$R^+(T)$. We never build the column transducer explicitly. Second, we define
+an equivalence relation on its states and construct the quotient with respect
+to this relation incrementally. If the construction terminates, the result is
+a finite-state transducer for $R^+(T)$.
 
-\paragraph{Acceleration by quotienting.}
-Acceleration is typically based on \emph{quotienting}: one finds an
-equivalence relation~$\simeq$ on the states of a finite approximation~$T^n$,
-merges equivalent states to obtain a quotient transducer $T^n/{\simeq}$, and
-checks whether the result characterizes~$T^+$. The difficulty is that
-quotienting generally enlarges the accepted language: $L(T^n) \subseteq
-L(T^n/{\simeq})$, often strictly. The quotient is therefore taken on the
-\emph{history transducer}, a canonical infinite transducer built as the
-union of all $T^n$ for $n \geq 1$, where each state records the full sequence
-of $T$-states visited during product construction. A key theoretical
-contribution is the identification of equivalence relations on the states of
-the history transducer whose quotient accepts exactly~$T^+$. Such relations
-can be derived from forward and backward bisimulations, and in later work from
-simulations, on these states. When the resulting quotient is finite, it is a
-transducer for~$T^+$~\cite{AJNO02,AJNO03}. Related constructions iterate
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
+    node distance=0.95cm,semithick,
+    every state/.style={minimum size=6mm,inner sep=1pt}]
+  \node[state,initial,initial text={}] (s0) {$0$};
+  \node[state] (s1) [right=of s0] {$1$};
+  \node[state] (s2) [right=of s1] {$2$};
+  \node[state] (s3) [right=of s2] {$3$};
+  \node[state,accepting] (s4) [right=of s3] {$4$};
+  \path (s0) edge[loop above] node {\small$(\NoTok,\NoTok)$} (s0)
+        (s0) edge node {\small$(\Tok,\NoTok)$} (s1)
+        (s1) edge node {\small$(\NoTok,\NoTok)$} (s2)
+        (s2) edge node {\small$(\NoTok,\NoTok)$} (s3)
+        (s3) edge node {\small$(\NoTok,\Tok)$} (s4)
+        (s4) edge[loop above] node {\small$(\NoTok,\NoTok)$} (s4);
+  \node at ($(s0)!0.5!(s4)+(0,-0.8)$) {(a)};
+\end{tikzpicture}
+
+\vspace{1ex}
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
+    node distance=1.6cm,semithick,
+    every state/.style={minimum size=6mm,inner sep=1pt}]
+  \node[state,initial,initial text={}] (r0) {$0$};
+  \node[state] (r1) [right=of r0] {$1$};
+  \node[state,accepting] (r2) [right=of r1] {$2$};
+  \path (r0) edge[loop above] node {\small$(\NoTok,\NoTok)$} (r0)
+        (r0) edge node {\small$(\Tok,\NoTok)$} (r1)
+        (r1) edge[loop above] node {\small$(\NoTok,\NoTok)$} (r1)
+        (r1) edge node {\small$(\NoTok,\Tok)$} (r2)
+        (r2) edge[loop above] node {\small$(\NoTok,\NoTok)$} (r2);
+  \node at ($(r0)!0.5!(r2)+(0,-0.8)$) {(b)};
+\end{tikzpicture}
+\caption{(a) The transducer $T^3$, which passes the token three positions to
+the right. (b) A transducer for the transitive closure $R^+(T)$.}
+\label{fig:closures}
+\end{figure}
+
+\paragraph{The column transducer.}
+The column transducer simulates a sequence of $i$ runs of~$T$ by a single
+run. Figure~\ref{fig:columns} shows four runs $\rho_1, \ldots, \rho_4$ of the
+transducer~$T$ on words of length five. The runs relate the pairs
+$(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\Tok\NoTok\NoTok\NoTok)$,
+$(\NoTok\Tok\NoTok\NoTok\NoTok, \NoTok\NoTok\Tok\NoTok\NoTok)$,
+$(\NoTok\NoTok\Tok\NoTok\NoTok, \NoTok\NoTok\NoTok\Tok\NoTok)$, and
+$(\NoTok\NoTok\NoTok\Tok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$, so the pair
+$(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$ belongs to
+$R^4(T)$. If we read the four runs column by column, we obtain a single run
+whose states, called \emph{columns}, are sequences of four states of~$T$. Each
+step of this run is labeled by the total effect of the corresponding steps of
+the four runs. For instance, the first step is labeled $(\Tok,\NoTok)$, since
+the first steps of the four runs rewrite $\Tok$ to $\NoTok$, and then $\NoTok$
+to $\NoTok$ three times. The second step is labeled $(\NoTok,\NoTok)$, since
+the second steps rewrite $\NoTok$ to $\Tok$, then $\Tok$ to $\NoTok$, and then
+$\NoTok$ to $\NoTok$ twice.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1.75cm,y=0.95cm,
+    st/.style={circle,draw,inner sep=0pt,minimum size=5.5mm,font=\small},
+    lab/.style={font=\scriptsize,above=-0.5pt}]
+  \foreach \y/\name/\states in {0/1/{q_L,q,q_R,q_R,q_R,q_R},
+                                -1/2/{q_L,q_L,q,q_R,q_R,q_R},
+                                -2/3/{q_L,q_L,q_L,q,q_R,q_R},
+                                -3/4/{q_L,q_L,q_L,q_L,q,q_R}} {
+    \node[left] at (-0.4,\y) {$\rho_{\name}$};
+    \foreach \s [count=\x from 0] in \states {
+      \node[st] (n\name\x) at (\x,\y) {$\s$};
+    }
+  }
+  \foreach \name/\labs in {1/{(\Tok,\NoTok),(\NoTok,\Tok),(\NoTok,\NoTok),(\NoTok,\NoTok),(\NoTok,\NoTok)},
+                           2/{(\NoTok,\NoTok),(\Tok,\NoTok),(\NoTok,\Tok),(\NoTok,\NoTok),(\NoTok,\NoTok)},
+                           3/{(\NoTok,\NoTok),(\NoTok,\NoTok),(\Tok,\NoTok),(\NoTok,\Tok),(\NoTok,\NoTok)},
+                           4/{(\NoTok,\NoTok),(\NoTok,\NoTok),(\NoTok,\NoTok),(\Tok,\NoTok),(\NoTok,\Tok)}} {
+    \foreach \l [count=\x from 0] in \labs {
+      \pgfmathtruncatemacro{\nx}{\x+1}
+      \draw[->] (n\name\x) -- node[lab] {$\l$} (n\name\nx);
+    }
+  }
+  \foreach \x in {0,...,5} {
+    \draw[rounded corners,dashed,gray] (\x-0.22,0.4) rectangle (\x+0.22,-3.4);
+    \node at (\x,-3.9) {$c_{\x}$};
+  }
+  \foreach \l [count=\x from 0] in {(\Tok,\NoTok),(\NoTok,\NoTok),(\NoTok,\NoTok),(\NoTok,\NoTok),(\NoTok,\Tok)} {
+    \draw[->] (\x+0.2,-3.9) -- node[below,font=\scriptsize] {$\l$} (\x+0.8,-3.9);
+  }
+\end{tikzpicture}
+\caption{Four runs $\rho_1, \ldots, \rho_4$ of the transducer~$T$ of
+Figure~\ref{fig:transducer}(b). Read column by column, they form a single run
+$c_0 c_1 \cdots c_5$ of the column transducer, shown at the bottom with the
+labels of its steps.}
+\label{fig:columns}
+\end{figure}
+
+Formally, from a transducer $T = (P, q_0, \Theta, F)$ we define the
+\emph{column transducer} $T^{\mathit{col}}$ as follows. Its states are the
+nonempty sequences of states of~$T$, that is, the set~$P^+$. Its initial
+states are the sequences $q_0^i$ with $i \geq 1$, and its accepting states are
+the nonempty sequences of accepting states of~$T$. For columns $c = q_1 \cdots
+q_m$ and $c' = r_1 \cdots r_m$ of the same length, there is a transition $c
+\xrightarrow{(a,a')} c'$ if there are symbols $a_0, a_1, \ldots, a_m$ with
+$a_0 = a$ and $a_m = a'$ such that $q_j \xrightarrow{(a_{j-1},a_j)} r_j$ is a
+transition of~$T$ for each $j$ with $1 \leq j \leq m$. A run of the column
+transducer from $q_0^i$ to a sequence in $F^i$ accepts exactly the pairs
+in~$R^i(T)$, so $T^{\mathit{col}}$ accepts the relation~$R^+(T)$. Its set of
+states is infinite, however, so it cannot be built explicitly.
+
+\paragraph{Quotienting.}
+We now define an equivalence relation on columns that identifies columns
+which differ only in the number of repetitions of certain states. We say that
+a state~$q$ of~$T$ is \emph{left-copying} if every run of~$T$ from the
+initial state to~$q$ reads only pairs of the form $(a,a)$. Symmetrically, $q$
+is \emph{right-copying} if every run from~$q$ to an accepting state reads only
+pairs of the form $(a,a)$. In other words, the prefix read before a
+left-copying state and the suffix read after a right-copying state are copied
+unchanged. In Figure~\ref{fig:transducer}(b), the state~$q_L$ is left-copying
+and the state~$q_R$ is right-copying. We say that two columns are
+\emph{equivalent} if they become equal when every block of consecutive
+repetitions of a left-copying or right-copying state is replaced by a single
+occurrence of that state. For instance, the columns $q_R q_R q\, q_L$ and $q_R
+q\, q_L q_L$ are equivalent. Each equivalence class is described by a regular
+expression $e_1 e_2 \cdots e_k$, where each $e_j$ is either $q^+$ for a
+left-copying or right-copying state~$q$, or a single state that is neither
+left-copying nor right-copying, and where two consecutive $e_j$ are equal only
+if they are single states. We write $[c]$ for the equivalence class of a
+column~$c$.
+
+The \emph{quotient transducer} has the equivalence classes as states. Its
+initial state is $[q_0] = q_0^+$, assuming that $q_0$ is left-copying, and its
+accepting states are the classes of accepting columns. There is a transition
+$[c] \xrightarrow{(a,a')} [c']$ whenever $c \xrightarrow{(a,a')} c'$ is a
+transition of the column transducer. With this choice of equivalence, the
+quotient accepts the same relation as the column transducer~\cite{AJNO02},
+namely~$R^+(T)$. The quotient may still be infinite, since $R^+(T)$ need not be
+regular, but in many practical cases it is finite.
+
+\paragraph{The procedure.}
+The quotient is built incrementally by Procedure~\ref{alg:acceleration}, which
+explores the classes reachable from the initial class. To compute the
+successors of a class, we use two operations. For a state~$q$, we write
+$q^\oplus$ for $q^+$ if $q$ is left-copying or right-copying, and for~$q$
+otherwise. For two classes, we write $[c] \odot [c'] = [c \cdot c']$ for the
+class of the concatenated column; on regular expressions, $(e_1 \cdots e_k)
+\odot (f_1 \cdots f_l)$ is $e_1 \cdots e_k f_1 \cdots f_l$, except when $e_k$
+and $f_1$ are both equal to $q^+$ for some copying state~$q$, in which case it
+is $e_1 \cdots e_k f_2 \cdots f_l$. We write $C \Rightarrow_{(a,a')} D$ for
+classes $C$ and~$D$ if either
+\begin{itemize}[leftmargin=*,nosep]
+\item $q \xrightarrow{(a,a')} r$ is a transition of~$T$, with $C = q^\oplus$
+and $D = r^\oplus$, or
+\item $C = C_1 \odot C_2$ and $D = D_1 \odot D_2$, and there is a symbol~$b$
+with $C_1 \Rightarrow_{(a,b)} D_1$ and $C_2 \Rightarrow_{(b,a')} D_2$.
+\end{itemize}
+The second case composes the effect of the upper part of a column with that of
+its lower part, as in Figure~\ref{fig:columns}.
+
+\begin{algorithm}[t]
+\caption{Acceleration by quotienting}
+\label{alg:acceleration}
+\begin{algorithmic}[1]
+\REQUIRE A transducer $T = (P, q_0, \Theta, F)$
+\ENSURE A transducer $(S, q_0^+, \Theta', F')$ for $R^+(T)$, if the procedure terminates
+\STATE $S \leftarrow \emptyset$; $\Theta' \leftarrow \emptyset$; $F' \leftarrow \emptyset$; $W \leftarrow \{q_0^+\}$
+\WHILE{$W \neq \emptyset$}
+  \STATE pick and remove a class $C$ from $W$
+  \IF{$C \notin S$}
+    \STATE $S \leftarrow S \cup \{C\}$
+    \FORALL{$a$, $a'$, $D$ with $C \Rightarrow_{(a,a')} D$}
+      \STATE $W \leftarrow W \cup \{D\}$
+      \STATE $\Theta' \leftarrow \Theta' \cup \{(C, (a,a'), D)\}$
+      \IF{$D$ consists of accepting columns}
+        \STATE $F' \leftarrow F' \cup \{D\}$
+      \ENDIF
+    \ENDFOR
+  \ENDIF
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+The procedure maintains a set~$W$ of classes that have been found to be
+reachable but whose successors have not yet been computed. It starts from the
+initial class $q_0^+$. In each iteration, it removes a class from~$W$ and, if
+the class has not been explored before, adds its outgoing transitions and its
+successors. The relation accepted by the partial result grows with each
+iteration and is always contained in~$R^+(T)$. The procedure terminates when
+$W$ is empty, which happens exactly when the reachable part of the quotient is
+finite.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,semithick,
+    every state/.style={minimum size=8mm,inner sep=1pt,font=\small}]
+  \node[state,initial,initial text={}] (A) at (0,0) {$q_L^+$};
+  \node[state] (B) at (2.3,0) {$q$};
+  \node[state,accepting] (C) at (4.6,0) {$q_R^+$};
+  \node[state,ellipse] (D) at (1.15,1.7) {$q\,q_L^+$};
+  \node[state,ellipse] (E) at (3.45,1.7) {$q_R^+ q$};
+  \node[state,ellipse] (G) at (2.3,3.4) {$q_R^+ q\, q_L^+$};
+  \path (A) edge[loop below] node {\scriptsize$(\NoTok,\NoTok)$} (A)
+        (A) edge node[below] {\scriptsize$(\Tok,\NoTok)$} (B)
+        (B) edge node[below] {\scriptsize$(\NoTok,\Tok)$} (C)
+        (C) edge[loop below] node {\scriptsize$(\NoTok,\NoTok)$} (C)
+        (A) edge node {\scriptsize$(\Tok,\NoTok)$} (D)
+        (D) edge node[below] {\scriptsize$(\NoTok,\NoTok)$} (E)
+        (E) edge node {\scriptsize$(\NoTok,\Tok)$} (C)
+        (D) edge node {\scriptsize$(\NoTok,\NoTok)$} (G)
+        (G) edge node {\scriptsize$(\NoTok,\NoTok)$} (E)
+        (G) edge[loop above] node {\scriptsize$(\NoTok,\NoTok)$} (G);
+\end{tikzpicture}
+\caption{The transducer for $R^+(T)$ computed by
+Procedure~\ref{alg:acceleration} for the token-passing protocol. Each state is
+an equivalence class of columns.}
+\label{fig:quotient}
+\end{figure}
+
+\paragraph{The token-passing protocol.}
+Figure~\ref{fig:quotient} shows the result of the procedure on the transducer
+of Figure~\ref{fig:transducer}(b). The procedure starts with the class
+$q_L^+$. Since $q_L \xrightarrow{(\Tok,\NoTok)} q$ and $q_L
+\xrightarrow{(\NoTok,\NoTok)} q_L$, we obtain the transition $q_L^+
+\Rightarrow_{(\Tok,\NoTok)} q$, and, by composing the two, the transition
+$q_L^+ = q_L^+ \odot q_L^+ \Rightarrow_{(\Tok,\NoTok)} q \odot q_L^+ =
+q\,q_L^+$. The loop on $q_L^+$ comes from the loop on~$q_L$. From~$q$, the
+transition $q \xrightarrow{(\NoTok,\Tok)} q_R$ gives the accepting class
+$q_R^+$, which has a loop labeled $(\NoTok,\NoTok)$. From the class
+$q\,q_L^+$, the upper part writes the token, since $q \Rightarrow_{(\NoTok,\Tok)}
+q_R^+$, and the lower part reads it, since $q_L^+ \Rightarrow_{(\Tok,\NoTok)}
+q$ and $q_L^+ \Rightarrow_{(\Tok,\NoTok)} q\,q_L^+$. Composing them gives the
+transitions from $q\,q_L^+$ to $q_R^+ q$ and to $q_R^+ q\,q_L^+$, both labeled
+$(\NoTok,\NoTok)$. From $q_R^+ q$, the lower state~$q$ writes the token, which
+gives the transition to $q_R^+$ labeled $(\NoTok,\Tok)$. Finally, the class
+$q_R^+ q\, q_L^+$ has a loop and a transition to $q_R^+ q$, both labeled
+$(\NoTok,\NoTok)$. At this point, no new classes are produced and the
+procedure terminates. The result accepts exactly the pairs in which the token
+is moved one or more positions to the right, and it is equivalent to the
+transducer of Figure~\ref{fig:closures}(b). Composing it with the initial
+configurations gives the reachable set $\NoTok^*\Tok\NoTok^*$, which does not
+intersect the bad configurations, so the protocol is safe.
+
+\subsection{Further Techniques}
+
+Acceleration is one of several techniques for computing transitive closures or
+reachable sets in regular model checking. Related constructions iterate
 transducers by identifying equivalent states with bisimulation-like
-relations~\cite{DLS01}.
+relations~\cite{DLS01}, and the quotienting technique above has been made
+more efficient using simulations~\cite{AJNO03}. \emph{Widening} and
+\emph{extrapolation} techniques compute a few iterates, detect a regular
+pattern of growth, and extrapolate it to a candidate for the limit, which is
+then checked~\cite{Tou01,BLW03,BT02}. \emph{Abstract regular model
+checking}~\cite{BHV04} gives up exactness: it alternates between applying the
+transducer and abstracting the resulting automata, for example by merging
+states that accept the same words up to a given length, and refines the
+abstraction when a spurious counterexample is found. For safety verification,
+it is enough to find a regular set that contains the initial configurations,
+is closed under the transducer, and is disjoint from the bad configurations.
+Such a \emph{regular inductive invariant} can be found with automata
+learning, in which a learner proposes candidate automata and a teacher
+checks the three conditions~\cite{HV05,NJ13,CHLR17}.
 
-\paragraph{Extrapolation and abstraction.}
-A different idea is to compute a few iterates $T^1, \ldots, T^k$, detect a
-regular pattern of growth between consecutive iterates, and
-\emph{extrapolate} it to a guess of the limit, which is then checked for
-correctness~\cite{BLW03,BT02}. In the token-passing example, the transducer
-for $T^{k+1}$ has one more state, and one more $(\NoTok,\NoTok)$ step between
-the pair that gives the token away and the pair that receives it, than the
-transducer for~$T^k$. Extrapolation turns this repeated step into the loop
-on~$q_1$. \emph{Abstract regular model
-checking}~\cite{BHV04} gives up exactness instead: it computes reachable sets
-by alternately applying the transducer and abstracting the resulting automata,
-for example by merging states that accept the same words up to a given length.
-The abstraction guarantees termination, and spurious counterexamples are used
-to refine it.
-
-\paragraph{Learning regular invariants.}
-For safety verification, it is not necessary to compute the reachable set
-exactly: it suffices to find a regular set that contains the initial
-configurations, is closed under the transducer, and is disjoint from the bad
-configurations. Such a \emph{regular inductive invariant} can be searched for
-with techniques from automata learning, in which a learner proposes candidate
-automata and a teacher checks the three conditions and returns
-counterexamples~\cite{HV05,NJ13,CHLR17}. Checking whether a given automaton is
-an inductive invariant is a decidable problem on automata, so the learning
-approach replaces the computation of a fixpoint by a sequence of decidable
-checks.
-
-\paragraph{Extensions.}
-Beyond the linear word model, the framework extends to configurations
-represented as trees, enabling verification of systems with hierarchical or
-recursive structure~\cite{AJMO02,BT02}. Liveness properties can be handled by
-extending the framework to infinite words~\cite{BLW05}, and regular proofs of
-liveness have been studied for randomized parameterized systems~\cite{LR16}.
-RMC has been successfully applied to token-passing systems, mutual exclusion
-algorithms, and systems with unbounded communication channels, stacks, and
-integer variables~\cite{AJNS04,Abd12}.
-
-\subsection{Monotonic Abstraction}
-
-While the transducer-based approach is general, it can be
-computationally expensive and may not scale to larger protocols. An important
-line of work within the RMC framework addresses this by replacing the full
-power of regular languages with a lighter symbolic representation based on
-\emph{upward-closed sets}, in a technique known as \emph{monotonic
-abstraction}~\cite{ADHR07,Abd12}. The approach targets parameterized systems
-with a linear process topology and global transitions (both universal and
-existential). Configurations are again words over the process state alphabet,
-and the subword ordering~$\preceq$ of Section~\ref{sec:wqo} plays a central
-role. Bad configurations are characterized by upward-closed sets with respect
-to this ordering: if a configuration is bad, then any larger configuration
-(with more processes) is also bad. Such sets have a finite symbolic
-representation in terms of their minimal elements, making them far more
-tractable than arbitrary regular sets.
-
-The core idea is to replace the concrete transition relation~$\to$ with an
-abstract relation~$\to_A$ that over-approximates~$\to$ and is monotone with
-respect to~$\preceq$. Local and existential transitions are already monotone
-and require no approximation. Universal transitions, where a process may
-move only if all processes in its context satisfy some condition, are
-\emph{not} monotone, since adding more processes to a configuration may
-violate the universal condition and disable the transition. The abstraction
-handles this by allowing a configuration to silently drop processes that
-obstruct the transition, effectively making the universal condition vacuously
-satisfiable. Since $\to_A$ is an over-approximation, any safety property
-that holds in the abstract model is guaranteed to hold in the concrete one.
-
-Safety verification then proceeds by \emph{backward reachability analysis}, as
-in Section~\ref{sec:wqo}. Starting from the upward-closed set $\Bad$ of bad
-configurations, one computes the sequence $U_0 = \Bad$, $U_{i+1} = U_i \cup
-\Pre_A(U_i)$, where $\Pre_A$ is the predecessor operator under~$\to_A$.
-Because $\to_A$ is monotone, each $U_i$ remains upward-closed and can be
-represented by a finite set of generators. Termination is guaranteed by
-Higman's lemma: the subword ordering~$\preceq$ is a well-quasi-ordering on
-words, so every ascending chain of upward-closed sets stabilizes after finitely
-many steps. The algorithm terminates when no new generators (up to
-subsumption) are produced; if none of the generators represents an initial
-configuration, the system is safe.
-
-\paragraph{The running example.}
-In the running example, the abstract relation allows a process in~$\Wait$ to
-move to~$\Crit$ in any configuration, after deleting the processes that are
-in~$\Crit$. For instance, $\Wait\Crit \to_A \Crit$. Backward reachability
-starts from the single generator $\Crit\Crit$ and computes the
-configurations from which one abstract step leads to a configuration with at
-least two processes in~$\Crit$. The steps from $\Idle$ to $\Wait$ and from
-$\Crit$ to $\Idle$ do not create processes in~$\Crit$, so a configuration
-that reaches $\upc{(\Crit\Crit)}$ by one of these steps already has at least
-two processes in~$\Crit$. The abstract step from $\Wait$ to
-$\Crit$ deletes all other processes in~$\Crit$, so it always results in a
-configuration with exactly one process in~$\Crit$. Hence $\Pre_A$ adds no new
-generators, the fixpoint is $\upc{(\Crit\Crit)}$, and since no initial
-configuration $\Idle^n$ contains $\Crit\Crit$, the protocol is safe. In this
-example the abstraction loses no precision with respect to the property. For
-protocols in which a process inspects the others one at a time, such as
-Burns' and Szymanski's algorithms, the same approach applies to the
-non-atomic versions of the global conditions~\cite{ABDR08}.
-
-\paragraph{Extensions and refinement.}
-Monotonic abstraction has been extended to processes with numerical variables
-whose values are compared using gap-order constraints~\cite{ADR09}, to tree
-topologies, broadcast communication, and binary rendez-vous, and to systems
-running under weak memory models (Section~\ref{sec:wmm}). Since the
-abstraction may introduce spurious counterexamples, it has been combined with
-a counterexample-guided refinement loop that restricts the deletions allowed
-in the abstract transitions~\cite{ACDHHR10}. The connection between monotonic
-abstraction and well-structured transition systems provides general
-decidability results for the abstract systems, for classes of systems that
-extend well beyond the purely parameterized setting~\cite{Abd10}.
+The framework extends beyond linear words. Tree automata and tree transducers
+represent configurations of systems with a tree topology or with recursive
+structure~\cite{AJMO02,BT02}. Liveness properties can be handled by working
+with infinite words~\cite{BLW04,BLW05} or through the transitive closure as
+mentioned above~\cite{AJNOS04}, and regular proofs of liveness have been
+studied for randomized parameterized systems~\cite{LR16}. Surveys of the area
+can be found in~\cite{AJNS04,Abd12,Abd21}. In the next section, we present a
+technique that replaces regular sets by upward-closed sets, trading generality
+for efficiency and guaranteed termination.

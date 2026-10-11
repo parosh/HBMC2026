@@ -3,209 +3,63 @@
 \label{sec:prelim}
 % ═════════════════════════════════════════════════════════════════════════════
 
-This section fixes the setting for the rest of the chapter. We describe
-parameterized systems and the verification problem informally, introduce a
-running example, and recall the basic notions of well-quasi-orderings and
-monotonic transition systems, which underlie several of the techniques
-presented later. We keep the presentation informal; precise definitions for
-the different classes of systems can be found in the cited
-works~\cite{AST18,BJKKRVW15,Abd10}.
+In this section, we define parameterized systems with a linear topology and the
+parameterized reachability problem. Other topologies and communication
+primitives are introduced in the sections where they are used.
 
-\subsection{Process Templates and Configurations}
+\subsection{Model}
 
-A parameterized system is defined by a \emph{process template}, a finite-state
-machine that describes the behavior of a single process. The template has a
-finite set~$Q$ of \emph{local states}, a set of initial local states, and a set
-of transitions. For each natural number~$n$, the \emph{instance} of size~$n$
-consists of~$n$ copies of the template running in parallel, where the copies
-are identified by the indices $1, \ldots, n$. Some systems also contain a
-distinguished \emph{control process}, defined by a separate template, that runs
-in parallel with the copies.
+For a finite set~$A$, we write $A^*$ for the set of finite words over~$A$ and
+$A^+$ for the set of nonempty words. For a word~$c$, we write $|c|$ for its
+length and $c[i]$ for its $i$th letter, for $1 \leq i \leq |c|$.
 
-A \emph{configuration} of the instance of size~$n$ records the local state of
-each process. We represent it as a word $q_1 q_2 \cdots q_n$ of length~$n$
-over the alphabet~$Q$, where $q_i$ is the local state of process~$i$. When the
-system also has shared variables, the configuration includes their values. For
-each fixed~$n$, the instance is a finite transition system. The parameterized
-system is the infinite family of all instances, and its set of configurations,
-taken over all~$n$, is infinite.
+A \emph{parameterized system} is a pair $\mathcal{P} = (Q, \Delta)$, where $Q$
+is a finite set of \emph{local states} and $\Delta$ is a finite set of
+\emph{transition rules}. A rule is either local or global. A \emph{local} rule
+has the form $s \to d$, where $s, d \in Q$. A \emph{global} rule has the form
+\[
+\textbf{if}\ \mathsf{Q}\, j \sim i : S\ \textbf{then}\ s \to d ,
+\]
+where $\mathsf{Q} \in \{\forall, \exists\}$ is the \emph{quantifier}, ${\sim}
+\in \{<, >, \neq\}$ is the \emph{range}, and $S \subseteq Q$. We call $s$ the
+\emph{source} and $d$ the \emph{destination} of the rule. A rule with
+quantifier~$\forall$ is \emph{universal}, and a rule with quantifier~$\exists$
+is \emph{existential}.
 
-The \emph{topology} of a system determines how processes are arranged and
-which processes can observe each other. In a \emph{linear} topology, the
-processes form an array, and a process can distinguish the processes to its
-left from those to its right. In a \emph{ring}, the last process is connected
-back to the first. In a \emph{clique}, all processes are indistinguishable; the
-order of the letters in a configuration is then irrelevant, and a configuration
-can be represented by a multiset of local states, or equivalently by a vector
-that counts, for each local state, how many processes occupy it. Trees and
-more general graphs also occur, for instance in hierarchical protocols and in
-ad hoc networks.
+A \emph{configuration} of~$\mathcal{P}$ is a word $c \in Q^+$, where $c[i]$ is
+the local state of process~$i$. The number $|c|$ of processes is arbitrary but
+does not change during a run. Let $c$ be a configuration, $\delta$ a rule with
+source~$s$ and destination~$d$, and $i$ a position with $c[i] = s$. We write
+$\delta(c,i)$ for the configuration~$c'$ with $c'[i] = d$ and $c'[j] = c[j]$
+for all $j \neq i$, provided that one of the following conditions holds:
+\begin{itemize}[nosep]
+\item $\delta$ is local;
+\item $\delta$ is universal, and $c[j] \in S$ for all positions $j \sim i$;
+\item $\delta$ is existential, and $c[j] \in S$ for some position $j \sim i$.
+\end{itemize}
+Otherwise, $\delta(c,i)$ is undefined. We call process~$i$ the \emph{active}
+process, and the processes $j$ with $j < i$ and $j > i$ its \emph{left} and
+\emph{right context}. We write $c \to c'$ if $c' = \delta(c,i)$ for some rule
+$\delta \in \Delta$ and position~$i$, and $\to^*$ for the reflexive transitive
+closure of~$\to$. For a set~$X$ of configurations, we write $\Post(X)$ for the
+set of configurations $c'$ with $c \to c'$ for some $c \in X$, and $\Pre(X)$ for
+the set of configurations $c$ with $c \to c'$ for some $c' \in X$.
 
-Processes interact through a small number of communication primitives. A
-\emph{local} transition changes the state of a single process without
-involving the others. In a \emph{rendez-vous}, two processes synchronize and
-change their states simultaneously. In a \emph{broadcast}, one process sends a
-message and all other processes react to it in the same step. Processes may
-also read and write \emph{shared variables} with finite domains. Finally, a
-transition may be guarded by a \emph{global condition} that refers to the
-states of the other processes. The condition is \emph{universal} if it requires
-all other processes (or all processes to the left, or to the right) to be in
-given local states, and \emph{existential} if it requires at least one of them
-to be. Global conditions are a convenient way of modeling protocols in which a
-process inspects the states of its peers before taking a step.
+\subsection{The Reachability Problem}
 
-\subsection{The Verification Problem}
+An instance of the \emph{parameterized reachability problem} is given by a
+parameterized system~$\mathcal{P}$, a set $\Init \subseteq Q^+$ of
+\emph{initial} configurations, and a set $\Bad \subseteq Q^+$ of \emph{bad}
+configurations. A configuration~$c$ is \emph{reachable} if $c_0 \to^* c$ for
+some $c_0 \in \Init$. We write $\mathcal{R}$ for the set of reachable
+configurations. The system is \emph{safe} if $\mathcal{R} \cap \Bad =
+\emptyset$. Typically, $\Init$ is a regular set, such as the set of
+configurations in which all processes are in a given initial state, and
+$\Bad$ is described by a finite set of patterns, such as the configurations in
+which two processes are in their critical sections.
 
-Most of this chapter is concerned with safety properties. A safety property is
-given by a set~$\Bad$ of \emph{bad} configurations, which is defined
-independently of the size of the instance. For instance, for mutual exclusion,
-$\Bad$ is the set of configurations, of any length, in which at least two
-processes are in their critical sections. We write $\Init$ for the set of
-initial configurations of all instances. The \emph{parameterized reachability
-problem} asks whether there is a size~$n$ and a run of the instance of
-size~$n$ that starts from a configuration in~$\Init$ and reaches a
-configuration in~$\Bad$. The system is \emph{safe} if no such~$n$ and run
-exist, that is, if the union of the reachable sets of all instances is
-disjoint from~$\Bad$.
-
-More general properties are often expressed in \emph{indexed} temporal
-logics~\cite{BCG89,EN95,GerSis92}, whose formulas quantify over process
-indices. A formula of the form ``for all distinct indices~$i$ and~$j$,
-$\varphi(i,j)$'' states that the temporal property~$\varphi$ holds for every
-pair of processes. Liveness properties, such as the requirement that every
-process that requests access to its critical section eventually obtains it,
-are typically checked under fairness assumptions on the scheduler.
-
-As mentioned in Section~\ref{sec:intro}, parameterized verification is
-undecidable in general~\cite{AK86}. The proof encodes the tape of a Turing machine in the configuration of a linear array of
-processes, one process per tape cell, with the head stored in the local state
-of one of the processes. Since the number of processes is unbounded, every
-finite portion of the tape can be represented, and the halting problem reduces
-to the parameterized reachability problem. The same idea works for rings of
-identical processes~\cite{Suz88}. Each technique in this chapter can be
-seen as a response to this result: it either identifies a class of systems for
-which the problem is decidable, or accepts incompleteness in exchange for
-generality.
-
-\subsection{A Running Example}
-\label{sec:running}
-
-We use the following simple mutual exclusion protocol as a running example.
-Each process has three local states: $\Idle$ (idle), $\Wait$ (waiting), and
-$\Crit$ (in the critical section). Initially, all processes are in~$\Idle$. A
-process may move from~$\Idle$ to~$\Wait$ at any time. A process in~$\Wait$ may
-enter the critical section, moving to~$\Crit$, if no other process is
-in~$\Crit$; this is a universal global condition. A process in~$\Crit$ may
-return to~$\Idle$ at any time. The template is shown in
-Figure~\ref{fig:running}.
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
-    node distance=2.2cm,semithick,
-    every state/.style={minimum size=8mm,inner sep=1pt}]
-  \node[state,initial,initial text={}] (i) {$\Idle$};
-  \node[state] (w) [right=of i] {$\Wait$};
-  \node[state] (c) [right=3.6cm of w] {$\Crit$};
-  \path (i) edge node {} (w)
-        (w) edge node[above=1pt] {\small $\forall j \neq \mathit{self}\colon q_j \neq \Crit$} (c)
-        (c) edge[bend left=35] node {} (i);
-\end{tikzpicture}
-\caption{The process template of the running example. The transition from
-$\Wait$ to~$\Crit$ is guarded by a universal condition: it is enabled only if
-no other process is in~$\Crit$.}
-\label{fig:running}
-\end{figure}
-
-Configurations are words over the alphabet $\{\Idle, \Wait, \Crit\}$, and the
-initial configurations are the words $\Idle^n$, for $n \geq 1$. The bad
-configurations are the words that contain at least two occurrences
-of~$\Crit$. For example, the instance of size three can reach
-$\Wait\Idle\Wait$ from $\Idle\Idle\Idle$ in two steps, and then move to
-$\Crit\Idle\Wait$ and to $\Idle\Idle\Wait$, but it can never reach a
-configuration such as $\Crit\Idle\Crit$, since the second process in~$\Wait$
-is blocked as long as the first one is in~$\Crit$.
-
-The protocol is safe for every~$n$, and for a human reader this is obvious:
-the guard is checked and the state is changed in a single atomic step, so no
-process can enter the critical section while another one is there. The
-example is therefore not interesting as a verification challenge, but it is
-small enough to show how each technique handles the unbounded number of
-processes. Realistic protocols, such as Burns' or Szymanski's algorithms,
-replace the atomic universal condition by a loop in which a process inspects
-the other processes one at a time. Their correctness then depends on subtle
-interactions between interleaved inspections, and verifying them is
-considerably harder~\cite{ABDR08,AHH16}.
-
-\subsection{Well-Quasi-Orderings and Monotonic Systems}
-\label{sec:wqo}
-
-Several techniques in this chapter rely on orderings on configurations that
-compare instances of different sizes. A \emph{quasi-ordering} on a set is a
-reflexive and transitive relation~$\sqsubseteq$. We say that $\sqsubseteq$ is a
-\emph{well-quasi-ordering} (WQO) if every infinite sequence $a_0, a_1, a_2,
-\ldots$ contains two elements $a_i$ and $a_j$ with $i < j$ and $a_i \sqsubseteq
-a_j$. For words, we use the \emph{subword ordering}. We write $u \preceq v$ if
-$u$ can be obtained from~$v$ by deleting letters, that is, if $u$ occurs in~$v$
-as a not-necessarily-contiguous subsequence. For example, $\Wait\Crit \preceq
-\Wait\Idle\Idle\Crit$. Two classical results provide the WQOs used most often
-in parameterized verification. By Dickson's lemma, vectors of natural numbers
-of a fixed dimension, ordered componentwise, form a WQO. By Higman's
-lemma~\cite{Hig52}, the words over a finite alphabet form a WQO under the
-subword ordering. Higman's lemma extends to words over any
-well-quasi-ordered alphabet, which makes it possible to combine orderings in a
-modular way.
-
-A set~$U$ of configurations is \emph{upward-closed} if it contains, together
-with every element~$a$, every element~$b$ with $a \sqsubseteq b$. Symmetrically,
-$U$ is \emph{downward-closed} if it contains, together with every element~$b$,
-every element~$a$ with $a \sqsubseteq b$. We write $\upc{a}$ for the set of elements larger than or equal to~$a$. In the running
-example, the set of bad configurations is upward-closed under the subword
-ordering: it is the set $\upc{(\Crit\Crit)}$ of words that contain
-$\Crit\Crit$ as a subword. Upward-closed sets play a central role for two
-reasons. First, under a WQO, every upward-closed set is determined by its
-finitely many minimal elements, which gives a finite representation of an
-infinite set. Second, every increasing sequence $U_0 \subseteq U_1 \subseteq
-\cdots$ of upward-closed sets eventually stabilizes.
-
-We say that a transition system is \emph{monotonic} with respect to an
-ordering~$\sqsubseteq$ on its configurations if larger configurations can
-simulate smaller ones: whenever $a$ can move to~$a'$ in one step and $a
-\sqsubseteq b$, the configuration~$b$ can move in one step to a
-configuration~$b'$ with $a' \sqsubseteq b'$. A \emph{well-structured transition system} is a
-transition system that is monotonic with respect to a
-WQO~\cite{ACJT96,ACJT00,FS01}. In a well-structured system, the set of
-configurations from which an upward-closed set~$U$ can be reached is itself
-upward-closed. This set can be computed by \emph{backward reachability}: one
-starts from $U_0 = U$ and computes $U_{i+1} = U_i \cup \Pre(U_i)$, where
-$\Pre(U_i)$ is the set of immediate predecessors of~$U_i$. Each $U_i$ is
-upward-closed and is represented by its minimal elements, and the sequence
-stabilizes after finitely many steps. Safety then amounts to checking that
-no initial configuration belongs to the limit. The algorithm requires that the
-minimal elements of $\Pre(U)$ can be computed from those of~$U$, which is the
-case for most models considered in this chapter.
-
-Many parameterized systems are monotonic under the subword ordering. Local
-transitions, rendez-vous, broadcast, and existential global conditions do not
-depend on the number of other processes in a way that could disable them, so
-adding processes preserves the ability to perform them. Universal global
-conditions are different. In the running example, the configuration~$\Wait$
-can move to~$\Crit$, but the larger configuration $\Wait\Crit$ cannot move its
-waiting process, because the added process is in the critical section. The
-running example is therefore not monotonic, and neither are most mutual
-exclusion protocols. Sections~\ref{sec:cutoff} and~\ref{sec:rmc} describe two
-ways of dealing with this: view abstraction, which does not require
-monotonicity, and monotonic abstraction, which restores it by
-over-approximation.
-
-For systems with a clique topology, a configuration can be represented by a
-vector of counters, one for each local state. This \emph{counting abstraction}
-is exact when processes are anonymous, and it turns the system into a Petri
-net, or equivalently a vector addition system, in which each transition adds a
-fixed vector to the current counter values~\cite{GerSis92,Esp98}. Petri nets
-are monotonic with respect to the componentwise ordering, which is a WQO by
-Dickson's lemma, so their coverability problem, and hence the parameterized
-reachability problem for such systems, is decidable. A universal global
-condition corresponds to a test that a counter is zero, which Petri nets
-cannot express. This is another view of why universal conditions are the main
-source of difficulty in the analysis of parameterized systems.
+The problem is undecidable, even for finite-state processes. Apt and
+Kozen~\cite{AK86} showed that verifying a specification for all sizes is not
+even semi-decidable, and Suzuki~\cite{Suz88} showed that the problem remains
+undecidable for unidirectional rings of identical finite-state processes. We
+sketch a reduction from the halting problem in Section~\ref{sec:rmc}.

@@ -3,182 +3,71 @@
 \label{sec:intro}
 % ═════════════════════════════════════════════════════════════════════════════
 
-Modern computing systems are increasingly built around the idea of replication:
-dozens of processors sharing a cache, hundreds of nodes collaborating in a
-distributed protocol, thousands of agents coordinating in a multi-agent system,
-or an arbitrary number of qubits processed by a quantum algorithm scaled to
-the problem at hand. A fundamental question arises in all of these settings:
-how do we know that such systems behave correctly, regardless of how many
-components are involved?
+The behavior of many computer systems is described by one or more
+\emph{parameters}, each of which ranges over a given domain. The parameters may
+relate to the size or topology of a network, to the data types over which a
+system is built, or to the initial values of variables. The
+\emph{parameterized verification problem} is to prove or refute that a
+specification holds for all values of the parameters. In this chapter, we
+concentrate on a particular class of parameterized systems, namely systems that
+consist of an arbitrary number of components, or processes. The size of the
+system is then a parameter of the verification problem, and parameterized
+verification amounts to proving correctness regardless of the number of
+processes.
 
-Traditional formal verification techniques, such as model checking, work by
-exhaustively exploring the states of a system. They are highly effective when
-the system is fixed and finite, but become problematic as the system scales.
-When the number of components (processes, nodes, threads, agents, or qubits)
-is left as a free parameter, the state space is infinite, and classical
-finite-state methods no longer apply directly. This is the setting that
-\textbf{parameterized verification} addresses: proving or disproving that a
-correctness property holds for a \emph{family} of systems, indexed by a
-natural number~$n$ representing the number of components, for all values of~$n$
-simultaneously.
+Parameterized systems appear naturally in many applications, such as mutual
+exclusion algorithms, bus protocols, network protocols, cache coherence
+protocols, distributed algorithms, and web services. A mutual exclusion
+protocol must guarantee that no two processes are in their critical sections at
+the same time, whatever the number of processes that participate in a session
+of the protocol. A cache coherence protocol must keep the shared data
+consistent for any number of caches. Sensor networks may consist of thousands
+of nodes, and network protocols may involve millions of participants. Classical
+model checking verifies one instance of such a system at a time, for a fixed
+number of processes. Even if each process is finite-state, the family of all
+instances has an infinite state space, so there is a need to extend
+verification from individual instances to the parameterized case.
 
-\paragraph{Properties and systems of interest.}
-The correctness properties most commonly studied in parameterized verification
-are \emph{safety} properties, which assert that something bad never happens
-(e.g., mutual exclusion: no two processes occupy a critical section at the
-same time), and \emph{liveness} properties, which assert that something good
-eventually happens (e.g., every request is eventually served). Fairness
-conditions on scheduling, specifying how components take turns, are also
-of interest, particularly in combination with liveness. In the quantum setting,
-the relevant correctness notion is different in character: one typically asks
-for \emph{relational} or \emph{functional} properties, asserting that a
-parameterized circuit correctly maps every input state to the expected output
-state, for all input sizes simultaneously.
+Parameterized verification is undecidable in general~\cite{AK86,Suz88}, even
+when each process is finite-state. Research in the area has therefore
+identified classes of systems for which the problem is decidable, developed
+algorithms that are not guaranteed to terminate but that terminate often in
+practice, and used abstractions that over-approximate the behavior of the
+system. A recurring theme is the need for a finite symbolic representation of
+infinite sets of configurations, such as regular languages or upward-closed
+sets. Another recurring theme is \emph{monotonicity}: the observation that
+adding processes to a system often only enables more behavior, which is
+exploited by cutoff arguments and by the theory of well-structured transition
+systems. A third theme is the observation that the behavior of a large instance
+is often already visible in a small one. \emph{Cutoff} methods make this
+precise: a static cutoff theorem shows that, for a given class of systems,
+correctness for all instances up to a fixed size implies correctness for all
+sizes~\cite{EN95,EK00}, while dynamic cutoff methods discover such a size
+during the analysis~\cite{AHH16,KKW10}.
 
-The range of systems to which parameterized verification applies is broad.
-Classic benchmarks include \emph{mutual exclusion protocols} such as Burns',
-Peterson's, Dekker's, and Szymanski's algorithms, where the goal is to show
-that no two of an arbitrary number of processes can simultaneously enter their
-critical sections. \emph{Cache coherence protocols}, such as the German and
-MESI protocols used in multiprocessor hardware, must maintain consistency of
-shared data across an unbounded number of caches. \emph{Token-passing rings}
-pass a single token around a linear or circular array of processes, and
-safety amounts to showing that at most one process holds the token at any
-time. \emph{Distributed consensus protocols}, such as variants of Paxos and
-leader election algorithms, must reach agreement among an arbitrary number of
-participants despite failures. Beyond these classic examples, parameterized
-verification applies to broadcast communication networks, producer-consumer
-systems, concurrent programs running on modern multiprocessor hardware under
-\emph{weak memory models}, and, most recently, parameterized quantum circuits,
-where the number of qubits scales with the problem instance.
-
-\paragraph{Fundamental difficulty.}
-The challenge of parameterized verification is fundamental. In general, it is
-undecidable~\cite{AK86}: there is no algorithm that, given an arbitrary
-parameterized system and property, correctly determines whether the property
-holds for all system sizes. This result follows from the ability to simulate
-the computation of a Turing machine using parameterized processes, and it holds
-even for very restricted architectures, such as rings of identical finite-state
-processes~\cite{Suz88}. The undecidability of the
-problem has not, however, prevented significant progress. Instead, it has
-motivated a wide range of techniques, each identifying meaningful and
-practically important subclasses of systems for which verification \emph{is}
-tractable, and developing algorithms, abstractions, and proof methods tailored
-to those subclasses.
-
-A unifying theme across many of the approaches covered here is the need for
-a \emph{finite symbolic representation} of infinite families of system states.
-In the classical setting, regular languages and upward-closed sets play this
-role; in the quantum setting, \emph{synchronized weighted tree automata} serve
-an analogous purpose. Another recurring theme is \emph{monotonicity}: the
-observation that adding more components to a system can only enable more
-behavior, not less, is exploited in cutoff arguments, backward reachability
-algorithms, and well-structured transition system frameworks alike. A third
-theme is the tension between automation and expressiveness: fully automatic
-methods necessarily restrict the class of systems or properties they handle,
-while deductive and proof-based methods gain generality at the cost of requiring
-more human guidance.
-
-\paragraph{Overview of approaches.}
-This chapter covers the main lines of work in parameterized verification,
-organized around the following themes.
-
-\emph{Parameterized systems} (Section~\ref{sec:prelim}) are introduced
-informally, together with the verification problem, a running example of a
-simple mutual exclusion protocol that we revisit in later sections, and the
-basic notions of well-quasi-orderings and monotonic transition systems on which
-several of the later techniques rely.
-
-\emph{Early foundations} (Section~\ref{sec:early}) trace the origins of the
-field to the first formulations of the parameterized model-checking problem: a
-control process together with an unbounded population of identical user
-processes communicating by rendez-vous, for which reasoning about the whole
-family reduces to a finite analysis~\cite{GerSis92}; automata used as inductive
-invariants for linear networks of arbitrary size~\cite{SisGyu99}; and symmetry
-reduction for populations of identical processes~\cite{EmeSis96,GyuSis97}.
-
-\emph{Cutoff methods} (Section~\ref{sec:cutoff}) exploit the symmetry and
-homogeneity of parameterized systems to reduce verification to a finite number
-of instances. A \emph{cutoff theorem} asserts that if a property holds for all
-system sizes up to some bound~$k$, it holds for all sizes. Static cutoff
-theorems, due to Emerson, Namjoshi, and Kahlon, apply to token-passing rings,
-guarded protocols, and cache coherence protocols~\cite{EN95,EK00,EK03}.
-\emph{Dynamic cutoff methods}, exemplified by \emph{view
-abstraction}~\cite{AHH13,AHH16}, determine the cutoff adaptively during
-verification.
-
-\emph{Regular model checking} (Section~\ref{sec:rmc}) takes a symbolic
-approach, representing configurations as words over a finite alphabet and sets
-of configurations as regular languages~\cite{KW01,BW98,BJNT00}. Transitions are
-encoded as length-preserving finite-state transducers, and reachability
-analysis reduces to computing the transitive closure of a transducer. A
-lightweight variant, \emph{monotonic abstraction}, replaces full
-regular-language representations with upward-closed sets, enabling efficient
-backward reachability analysis that terminates by a well-quasi-ordering
-argument~\cite{ADHR07,Abd12}.
-
-\emph{Abstraction and network invariants} (Section~\ref{sec:abstraction})
-reduce the parameterized problem to a finite one by constructing a small
-abstract system that over-approximates all instances. The \emph{network
-invariant} method represents the collective behavior of all processes except
-one by a single abstract process~\cite{WL89,KM89,KPSZ02}. Counter abstraction
-and environment abstraction summarize the population by bounded counters or by
-the view of a single reference process~\cite{PXZ02,CTV06}.
-
-\emph{Deductive and proof-based methods} (Section~\ref{sec:deductive}) approach
-parameterized verification by constructing formal proofs of inductive
-invariants that hold for all system sizes simultaneously, building on the
-work of Owicki and Gries~\cite{OG76} and Lamport~\cite{Lam94}. Invisible
-invariants and related techniques reduce the burden on the user by generating candidate invariants
-automatically from small instances~\cite{PRZ01}.
-
-\emph{SMT-based methods} (Section~\ref{sec:smt}) use modern Satisfiability
-Modulo Theories solvers to automate the search for inductive invariants.
-Array-based system encodings~\cite{GR10,GS10,CGKMZ12} support backward
-reachability with quantified formulas. The IC3/PDR algorithm~\cite{Bra11},
-originally designed for finite-state hardware verification, has been extended
-to the parameterized setting through quantified invariant
-inference~\cite{KBIRS17,GSM16}. Tools such as Ivy~\cite{PMPSS16} let users
-specify systems in decidable fragments of first-order logic and derive
-invariants that certify safety for all~$n$.
-
-\emph{Applications to weak memory models} (Section~\ref{sec:wmm}) require
-classical techniques to handle the unbounded buffers that arise from hardware
-memory reordering. The \emph{dual semantics} for TSO makes the system monotone
-and amenable to backward reachability, yielding the first decidability result
-for parameterized TSO verification~\cite{AABN16,AABN18}. The precise complexity of
-this problem was subsequently shown to be
-\textsc{PSpace}-complete~\cite{AAR20}. The richer Intel x86 model (eTSO)
-requires the machinery of \emph{better quasi-orderings}~\cite{AABKS26}.
-
-\emph{Parameterized verification of quantum circuits}
-(Section~\ref{sec:quantum}) is a recent direction, in which the
-parameter~$n$ counts qubits rather than processes, and the correctness
-criterion is functional rather than safety-oriented. A new automata model,
-\emph{synchronized weighted tree automata}, provides a symbolic representation
-of infinite families of quantum states, and a transducer-based framework
-handles parameterized gate semantics and circuit
-composition~\cite{AutoQPara}.
-
-\paragraph{Scope and organization.}
-Sections~\ref{sec:early}--\ref{sec:quantum} discuss the underlying ideas,
-key results, representative algorithms, and important benchmarks of each
-approach. Section~\ref{sec:industrial} discusses industrial applications of
-parameterized verification. Section~\ref{sec:crossrefs} situates this chapter
-within the broader context of the book, drawing connections to related topics
-covered in other chapters. Section~\ref{sec:conclusion} concludes with open
-problems. Throughout, we aim for an accessible presentation with minimal
-formalism, providing intuition and representative examples in preference to
-full technical detail. Pointers to primary sources are given for readers who
-wish to explore individual topics further.
-
-Several surveys complement this chapter. The chapter~\cite{AST18} gives a
-technical account of cutoffs, regular model checking, monotonic abstraction,
-and environment abstraction. The monograph~\cite{BJKKRVW15} systematically
-maps the boundary between decidable and undecidable classes of parameterized
-systems according to their communication primitives and topologies, and the
-overview~\cite{Esp14} focuses on the computational complexity of parameterized
-verification for populations of anonymous processes. Earlier surveys cover
-abstraction-based methods~\cite{ZP04}, regular model
-checking~\cite{AJNS04,Abd12,Abd21}, and the theory of well-quasi-ordered
-transition systems~\cite{Abd10}.
+This chapter is a revision of the corresponding chapter in the first edition
+of this handbook~\cite{AST18}. Instead of surveying all approaches at the same
+level of detail, we present three techniques in depth, with their algorithms
+and worked examples, and give an overview of the other approaches. The chapter
+is organized as follows. Section~\ref{sec:prelim} introduces parameterized
+systems and the verification problem, and recalls the basic notions of
+well-quasi-orderings and backward reachability. Section~\ref{sec:early}
+describes the early developments of the field. Section~\ref{sec:rmc} presents
+\emph{regular model checking}~\cite{KMMPS97,KW01,BJNT00}, which represents
+configurations as words and transition relations as finite-state transducers,
+and describes an acceleration technique for computing transitive closures of
+transducers. Section~\ref{sec:monotonic} presents \emph{monotonic
+abstraction}~\cite{ADHR07}, which over-approximates systems with global
+conditions by well-structured transition systems, so that safety can be checked
+by backward reachability analysis. Section~\ref{sec:views} presents \emph{view
+abstraction}~\cite{AHH13,AHH16}, a forward analysis that inspects only small
+instances of the system and detects a cutoff during the analysis.
+Section~\ref{sec:other} gives an overview of other approaches, including
+counting abstraction, cutoff theorems, network invariants and other
+abstractions, deductive and SMT-based methods, and two recent applications,
+namely programs running under weak memory models and parameterized quantum
+circuits. Section~\ref{sec:industrial} discusses industrial applications,
+Section~\ref{sec:crossrefs} relates this chapter to other chapters of the
+handbook, and Section~\ref{sec:conclusion} concludes with open problems.
+Throughout, we concentrate on safety properties, and mention liveness
+properties only occasionally.

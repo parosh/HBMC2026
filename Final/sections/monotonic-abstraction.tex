@@ -1,0 +1,378 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Monotonic Abstraction}
+\label{sec:monotonic}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Regular model checking is a uniform framework in which a wide class of
+techniques can be explained. In practice, however, it often needs to be
+complemented by other techniques. A limiting factor is the computation of the
+transitive closure of a transducer, which is not guaranteed to terminate and
+may rely on expensive automata-theoretic constructions. One way to increase
+efficiency is to over-approximate the behavior of the system. We derive an
+\emph{abstract} system whose behavior includes that of the original,
+\emph{concrete}, system, and that is easier to analyze. The price is a loss of
+precision: the abstract system may contain \emph{false positives}, that is,
+violations of the safety property that do not exist in the concrete system.
+The method is nevertheless sound: if the abstract system satisfies a safety
+property, then so does the concrete system.
+
+In this section, we present an over-approximation, called \emph{monotonic
+abstraction}~\cite{ADHR07,ABDR08}, that produces a well-structured transition
+system, so
+that backward reachability analysis can be applied
+to the abstract system. We consider the parameterized systems of
+Section~\ref{sec:prelim}, in which the transitions of a process may be
+constrained by universal or existential global conditions. Global conditions are important in the description of
+many parameterized systems, such as mutual exclusion protocols, but they are
+difficult to analyze: parameterized systems with universal conditions can
+simulate counter machines, so all non-trivial verification problems for them
+are undecidable. Such systems can be described with transducers as in
+Section~\ref{sec:rmc}, but here we use over-approximation instead.
+
+\subsection{Example}
+\label{sec:mutex}
+
+We introduce the method through a protocol that implements mutual exclusion
+among an arbitrary number of processes. Each process, depicted in
+Figure~\ref{fig:mutex}, has four local states: idle~($\Idle$),
+requesting~($\Req$), waiting~($\Wait$), and critical~($\Crit$). Initially, all
+processes are idle. When a process becomes interested in the critical section,
+it declares its interest by moving to the requesting state. This is described
+by the universal transition~$t_1$, which is allowed only if all other
+processes, whether in the left or the right context, are idle or requesting;
+this is indicated by the index $LR$ of the quantifier. From the requesting
+state, a process may move to the waiting state by the local transition~$t_2$,
+which does not depend on the other processes. Any number of processes may
+move from idle to requesting. However, once the first process has moved to the
+waiting state, it closes the door on the processes that are still idle: they
+cannot leave the idle state until no process is waiting or critical.
+
+Among the processes that have declared their interest, the leftmost process
+has the highest priority. This is described by the universal
+transition~$t_4$, by which a process may move from the waiting state to the
+critical section only if all processes in its left context are idle; the
+index~$L$ stands for left. If there is a process in its left context that is
+requesting, waiting, or critical, the process loops in the waiting state by the
+existential transition~$t_3$. When the process leaves the critical section, it
+returns to the requesting state by the local transition~$t_5$. From the
+requesting state, it either tries to reach the critical section again, or
+becomes idle by the local transition~$t_6$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,semithick,
+    every state/.style={minimum size=7mm,inner sep=1pt}]
+  \node[state,initial,initial text={},initial where=above] (i) at (0,0) {$\Idle$};
+  \node[state] (r) at (0,-1.8) {$\Req$};
+  \node[state] (w) at (-1.6,-3.6) {$\Wait$};
+  \node[state] (c) at (1.6,-3.6) {$\Crit$};
+  \path (i) edge[bend right=30] node[left,font=\small] {$t_1\colon \forall_{LR}\{\Idle,\Req\}$} (r)
+        (r) edge[bend right=30] node[right,font=\small] {$t_6$} (i)
+        (r) edge node[left,font=\small] {$t_2$} (w)
+        (c) edge node[right,font=\small] {$t_5$} (r)
+        (w) edge[loop left] node[left,font=\small] {$t_3\colon \exists_{L}\{\Req,\Wait,\Crit\}$} (w)
+        (w) edge node[below,font=\small] {$t_4\colon \forall_{L}\{\Idle\}$} (c);
+\end{tikzpicture}
+\caption{One process in a mutual exclusion protocol with a linear topology.
+The labels give the global conditions of the transitions $t_1$, $t_3$, and
+$t_4$; the other transitions are local.}
+\label{fig:mutex}
+\end{figure}
+
+\subsection{Model}
+
+In the notation of Section~\ref{sec:prelim}, the protocol is the
+parameterized system with local states $Q = \{\Idle, \Req, \Wait, \Crit\}$
+and the local rules $t_2 = \Req \to \Wait$, $t_5 = \Crit \to \Req$, and $t_6 =
+\Req \to \Idle$, together with the global rules
+\[
+\begin{array}{l}
+t_1 = \textbf{if}\ \forall j \neq i : \{\Idle,\Req\}\ \textbf{then}\ \Idle \to \Req, \\[2pt]
+t_3 = \textbf{if}\ \exists j < i : \{\Req,\Wait,\Crit\}\ \textbf{then}\ \Wait \to \Wait, \\[2pt]
+t_4 = \textbf{if}\ \forall j < i : \{\Idle\}\ \textbf{then}\ \Wait \to \Crit .
+\end{array}
+\]
+A configuration is a word over~$Q$. For instance, the configuration
+$\Idle\Wait\Crit\Wait\Req$ describes an instance with five processes that are
+idle, waiting, critical, waiting, and requesting, in that order. The
+transition relation~$\to$ depends on the type of the transition rule. The
+local rule~$t_2$ induces, for instance, the transition
+$\Wait\Idle\Req\Crit\Req \to \Wait\Idle\Wait\Crit\Req$, in which the active
+process changes its state from requesting to waiting. The existential
+rule~$t_3$ induces the transition $\Req\Idle\Wait\Crit\Req \to
+\Req\Idle\Wait\Crit\Req$, since the waiting process has a requesting process in
+its left context. The same transition is not enabled from
+$\Idle\Idle\Wait\Crit\Req$, since no process in the left context of the
+waiting process is requesting, waiting, or critical. The universal rule~$t_4$
+induces the transition $\Idle\Idle\Wait\Wait\Req \to \Idle\Idle\Crit\Wait\Req$,
+since all processes in the left context of the active process are idle. From
+$\Crit\Idle\Wait\Wait\Req$, neither waiting process can perform~$t_4$, since
+for each of them, some process in its left context is not idle.
+
+The initial configurations are those in which all processes are idle, such as
+$\Idle\Idle$ and $\Idle\Idle\Idle\Idle\Idle$. The bad configurations are those
+in which at least two processes are critical, such as $\Crit\Req\Crit$ and
+$\Idle\Crit\Req\Crit\Wait\Crit$. Proving the safety property amounts to showing that no bad
+configuration is reachable from an initial configuration.
+
+\subsection{Orderings and Backward Reachability}
+\label{sec:wqo}
+
+To analyze the protocol, we use an ordering on configurations that compares
+instances of different sizes, together with the theory of well-structured
+transition systems~\cite{ACJT96,ACJT00,FS01}, which is presented in
+Chapter~\chapref{Well-Structured Systems}. We recall here what we need.
+
+A \emph{quasi-ordering} on a set~$C$ is a reflexive and transitive relation
+${\sqsubseteq} \subseteq C \times C$. It is a \emph{well-quasi-ordering} (WQO)
+if every infinite sequence $c_0, c_1, c_2, \ldots$ of elements of~$C$ contains
+indices $i < j$ with $c_i \sqsubseteq c_j$. For words $u, v \in Q^*$, we write $u
+\preceq v$ if $u$ is a \emph{subword} of~$v$, that is, if $u = v[i_1] \cdots
+v[i_k]$ for some positions $i_1 < \cdots < i_k$. For example, $\Wait\Crit
+\preceq \Req\Wait\Idle\Crit\Wait$. By Higman's lemma~\cite{Hig52}, the subword
+ordering is a WQO.
+
+For a set $X \subseteq C$, we define its \emph{upward closure} $\upc{X} = \{ c
+\mid c' \sqsubseteq c \text{ for some } c' \in X \}$, and we say that $X$ is
+\emph{upward-closed} if $X = \upc{X}$. The \emph{generator}
+$\mathit{gen}(U)$ of an upward-closed set~$U$ is its set of minimal elements.
+If $\sqsubseteq$ is a WQO, then $\mathit{gen}(U)$ is finite and $U =
+\upc{\mathit{gen}(U)}$, so upward-closed sets can be represented by finite
+sets. Moreover, every increasing sequence $U_0 \subseteq U_1 \subseteq \cdots$
+of upward-closed sets stabilizes after finitely many steps. In our example, the
+set of bad configurations is the upward-closed set $\upc{\{\Crit\Crit\}}$ of
+configurations that contain $\Crit\Crit$ as a subword.
+
+A transition relation~$\to$ on~$C$ is \emph{monotonic} with respect
+to~$\sqsubseteq$ if, whenever $c_1 \to c_2$ and $c_1 \sqsubseteq c_3$, there is
+a configuration $c_4$ with $c_3 \to c_4$ and $c_2 \sqsubseteq c_4$. A
+\emph{well-structured transition system} is a transition system with a WQO on
+its configurations with respect to which its transition relation is
+monotonic. If $\to$ is monotonic and $U$ is upward-closed, then $\Pre(U)$ is
+upward-closed.
+
+Suppose that $\Bad$ is upward-closed. Procedure~\ref{alg:backward} computes a
+finite set~$U$ with $\upc{U} = \Pre^*(\Bad)$, the set of configurations from
+which $\Bad$ is reachable. It starts from the generator of~$\Bad$ and adds the
+minimal predecessors of~$\upc{U}$ until no new configuration is found. A
+configuration~$c$ is discarded if $c' \sqsubseteq c$ for some $c'$ already
+in~$U$; we say that $c$ is \emph{subsumed} by~$c'$, since $\upc{c} \subseteq
+\upc{c'}$. The system is safe if and only if $\upc{U} \cap \Init = \emptyset$.
+
+\begin{algorithm}[ht]
+\caption{Backward reachability analysis}
+\label{alg:backward}
+\begin{algorithmic}[1]
+\REQUIRE A well-structured transition system, a set $\Init$, and the generator $G$ of an upward-closed set $\Bad$
+\ENSURE Whether $\Bad$ is reachable from $\Init$
+\STATE $U \leftarrow G$
+\REPEAT
+  \STATE $N \leftarrow \{ c \in \mathit{gen}(\Pre(\upc{U})) \mid c' \not\sqsubseteq c \text{ for all } c' \in U \}$
+  \STATE $U \leftarrow U \cup N$
+\UNTIL{$N = \emptyset$}
+\RETURN whether $\upc{U} \cap \Init \neq \emptyset$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}[\cite{ACJT96,ACJT00}]
+\label{thm:backward}
+Procedure~\ref{alg:backward} terminates and returns the correct answer for every
+transition system $(C, \to)$ with an ordering~$\sqsubseteq$ that satisfies the
+following conditions:
+\begin{enumerate}[nosep]
+\item $\to$ is monotonic with respect to~$\sqsubseteq$;
+\item $\sqsubseteq$ is a WQO;
+\item for every $c \in C$, the finite set $\mathit{gen}(\Pre(\upc{\{c\}}))$ is
+computable;
+\item $\sqsubseteq$ is decidable;
+\item for every finite set $B \subseteq C$, the emptiness of $\upc{B} \cap
+\Init$ is decidable.
+\end{enumerate}
+\end{theorem}
+
+Conditions~1 and~2 ensure that each set computed by the procedure is
+upward-closed and that the sequence of sets stabilizes; conditions 3 to~5 make
+each step effective. Petri nets, broadcast protocols, and lossy channel systems
+satisfy these conditions~\cite{ACJT96,EFM99}. Our protocol satisfies
+conditions~2 to~5 with respect to the subword ordering, but not condition~1, as
+we show next.
+
+\subsection{Over-Approximation}
+
+We now define an abstract system that over-approximates the concrete one and
+that satisfies the conditions of Theorem~\ref{thm:backward} with respect to the
+subword ordering~$\preceq$. The main task is to obtain
+a transition relation that is monotonic with respect to~$\preceq$. We first
+explain why local and existential transitions are already monotonic, and why
+universal transitions are not.
+
+Consider the transition $\Idle\Req\Crit \to \Idle\Wait\Crit$ induced by the
+local rule~$t_2$, and the larger configuration $\Idle\Wait\Idle\Req\Crit\Req$.
+The larger configuration can perform the same local transition and reach
+$\Idle\Wait\Idle\Wait\Crit\Req$, which is larger than $\Idle\Wait\Crit$. In
+general, the active process of the smaller configuration also exists in the
+larger configuration, and since a local transition neither checks nor changes
+the states of the other processes, the larger configuration can perform the
+transition while preserving the ordering.
+
+Consider next the transition $\Req\Idle\Wait\Crit\Req \to
+\Req\Idle\Wait\Crit\Req$ induced by the existential rule~$t_3$. The
+configuration consists of the active process in state~$\Wait$, the left
+context $\Req\Idle$, and the right context $\Crit\Req$, and the left context
+contains a \emph{witness}, the requesting process, that enables the transition.
+In the larger configuration $\Idle\Req\Idle\Wait\Crit\Req\Crit$, the left and
+right contexts of the waiting process are larger than in the smaller
+configuration, and in particular the left context still contains the witness.
+Hence the larger configuration can perform the same transition.
+
+Universal transitions, in contrast, are not monotonic. Consider the transition
+$\Idle\Idle\Wait\Wait\Req \to \Idle\Idle\Crit\Wait\Req$ induced by the
+universal rule~$t_4$, which is enabled since the left context of the active
+process is idle. The larger configuration $\Idle\Req\Idle\Req\Wait\Wait\Req$
+cannot perform the transition, since the left context of the active process
+now contains requesting processes, which violate the condition.
+
+Since local and existential transitions are monotonic, they need not be
+approximated. For universal transitions, we define an abstract transition
+relation~$\leadsto$ as follows. An abstract transition first deletes all
+processes that violate the condition of the universal rule, and then performs
+the concrete transition. For instance, we have
+\[
+\Idle\Req\Idle\Req\Wait\Wait\Req \leadsto \Idle\Idle\Crit\Wait\Req ,
+\]
+since we can first delete the two requesting processes in the left context,
+obtaining $\Idle\Idle\Wait\Wait\Req$, and then perform the concrete
+transition~$t_4$. For local and existential rules, $\leadsto$ coincides
+with~$\to$. Every concrete transition is also an abstract transition, so the
+abstract system over-approximates the concrete one, and the abstract
+transition relation is monotonic with respect to~$\preceq$.
+
+\subsection{Backward Reachability Analysis}
+
+The abstract system satisfies the conditions of Theorem~\ref{thm:backward}. The
+subword ordering is a WQO, and it is decidable, since checking whether one
+word is a subword of another is easy. The abstract transition relation is
+monotonic, as explained above. For a finite set~$B$ of configurations and a
+regular set~$\Init$ of initial configurations, the emptiness of $\upc{B} \cap
+\Init$ amounts to the emptiness of the intersection of two regular languages.
+It remains to show how to compute, for a configuration~$c$ and a rule~$t$, the
+generator $\Pre(t)(c)$ of the set of configurations from which $\upc{c}$ can be
+reached by one abstract transition induced by~$t$. A formal definition can be
+found in~\cite{ADHR07}; here we illustrate the computation for the different
+types of rules of Figure~\ref{fig:mutex}.
+
+For a local rule, we run the transition backwards on the active process. For
+instance, for the local rule~$t_5$, we have $\Pre(t_5)(\Idle\Req\Wait) =
+\{\Idle\Crit\Wait\}$. Strictly speaking, the predecessors also include
+configurations such as $\Idle\Req\Crit\Wait$, but these are subsumed by
+$\Idle\Req\Wait$ itself, and we omit them for simplicity.
+
+For an existential rule, there are two cases, depending on whether the
+configuration contains a witness. For the rule~$t_3$, we have
+$\Pre(t_3)(\Req\Wait\Crit) = \{\Req\Wait\Crit\}$, since the left context of the
+waiting process contains a requesting process. In contrast,
+\[
+\Pre(t_3)(\Idle\Wait\Crit) = \{
+\Req\Idle\Wait\Crit,\, \Idle\Req\Wait\Crit,\,
+\Wait\Idle\Wait\Crit,\, \Idle\Wait\Wait\Crit,\,
+\Crit\Idle\Wait\Crit,\, \Idle\Crit\Wait\Crit \},
+\]
+since there is no witness in the left context of the active process, and we
+add a witness explicitly, in each possible state and at each possible
+position in the left context. The new configurations have four processes,
+while the original configuration has three. The configurations generated by
+the backward analysis may thus grow, and there is no a priori bound on their
+size.
+
+For a universal rule, we check whether some process in the configuration
+violates the condition. For the rule~$t_4$, we have
+$\Pre(t_4)(\Idle\Req\Idle\Crit\Wait) = \emptyset$, since the left context of
+the critical process, which would be the active process, contains a
+requesting process. Such a process would have been deleted by the abstract
+transition. In contrast, $\Pre(t_4)(\Idle\Idle\Crit\Wait) =
+\{\Idle\Idle\Wait\Wait\}$, since all processes in the left context of the
+active process are idle.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=2.1cm,y=0.7cm,font=\small,
+    gen/.style={draw,rounded corners,inner sep=3pt},
+    sub/.style={text=gray,inner sep=2pt}]
+  \node at (0,1) {iteration 0};
+  \node at (1,1) {iteration 1};
+  \node at (2,1) {iteration 2};
+  \node at (3,1) {iteration 3};
+  \node[gen] (cc) at (0,0) {$\Crit\Crit$};
+  \node[gen] (wc) at (1,0) {$\Wait\Crit$};
+  \node[gen] (rc) at (2,0) {$\Req\Crit$};
+  \node[sub] (rwc) at (2,-1.2) {$\Req\Wait\Crit$};
+  \node[sub] (wwc) at (2,-1.9) {$\Wait\Wait\Crit$};
+  \node[sub] (cwc) at (2,-2.6) {$\Crit\Wait\Crit$};
+  \node[sub] (cc2) at (3,0) {$\Crit\Crit$};
+  \foreach \n in {rwc,wwc,cwc,cc2} {
+    \draw[gray] (\n.south west) -- (\n.north east);
+  }
+  \node[draw,dashed,gray,rounded corners,fit=(rwc) (cwc)] (box) {};
+  \draw[->] (cc) -- node[above,font=\scriptsize] {$t_4$} (wc);
+  \draw[->] (wc) -- node[above,font=\scriptsize] {$t_2$} (rc);
+  \draw[->] (wc.south) |- node[pos=0.75,above,font=\scriptsize] {$t_3$} (box.west);
+  \draw[->] (rc) -- node[above,font=\scriptsize] {$t_5$} (cc2);
+\end{tikzpicture}
+\caption{Backward reachability analysis for the protocol of
+Figure~\ref{fig:mutex}. The framed configurations form the generator of the
+set of configurations from which a bad configuration is reachable in the
+abstract system. The struck-out configurations are subsumed by configurations
+found earlier.}
+\label{fig:mutex-backward}
+\end{figure}
+
+We can now run the backward reachability analysis of
+Section~\ref{sec:wqo} on the abstract system
+(Figure~\ref{fig:mutex-backward}). The analysis starts from the generator
+$\Crit\Crit$ of the bad configurations. The only rule that produces a critical
+process is~$t_4$. Of the two critical processes in $\Crit\Crit$, only the left
+one can perform~$t_4$ backwards, since the left context of the right one
+contains a process that is not idle, which would have been deleted by the
+abstract transition. This gives $\Pre(t_4)(\Crit\Crit) = \{\Wait\Crit\}$. From
+$\Wait\Crit$, two rules are enabled backwards, both for the waiting process:
+the local rule~$t_2$ gives $\Pre(t_2)(\Wait\Crit) = \{\Req\Crit\}$, and the
+existential rule~$t_3$ gives $\Pre(t_3)(\Wait\Crit) =
+\{\Req\Wait\Crit, \Wait\Wait\Crit, \Crit\Wait\Crit\}$. All three
+configurations produced by~$t_3$ are subsumed by~$\Wait\Crit$. From
+$\Req\Crit$, the only rule enabled backwards is the local rule~$t_5$, which
+gives $\Crit\Crit$, which is subsumed. The rule~$t_1$ cannot be applied
+backwards, since the critical process violates its condition and would have
+been deleted. At this point, no new configurations are produced, and the
+analysis terminates.
+
+The set of configurations from which a bad configuration is reachable in the
+abstract system is therefore $\upc{\{\Crit\Crit, \Wait\Crit, \Req\Crit\}}$.
+It contains no initial configuration, since the initial configurations contain
+only idle processes. Hence no bad configuration is reachable in the abstract
+system, and, since $\to \subseteq \leadsto$, none is reachable in the concrete
+system either. In this example, the abstraction does not lose any precision
+with respect to the property: the configurations that are reachable in the
+concrete system are exactly those that contain none of $\Crit\Crit$,
+$\Wait\Crit$, and $\Req\Crit$ as a subword. Intuitively, a process enters the
+critical section only when all processes to its left are idle, and these
+processes cannot leave the idle state while it is critical. We return to this
+observation in Section~\ref{sec:views}.
+
+\subsection{Extensions}
+
+Monotonic abstraction has been extended in several directions. In many
+protocols, such as Burns' and Szymanski's algorithms, a global condition is not
+checked atomically: the process inspects the other processes one at a time,
+and the other processes may move during the inspection. Such non-atomic global
+conditions can be handled by a refinement of the abstraction~\cite{ABDR08}.
+Processes may also have numerical variables, for instance clocks or tickets,
+whose values are compared using gap-order constraints~\cite{ADR09}. The method
+has been applied to tree topologies, to broadcast communication and binary
+rendez-vous, and to German's directory-based cache coherence
+protocol~\cite{ADHR07}. Since the abstraction may introduce false positives, it
+has been combined with a counterexample-guided refinement loop, which
+restricts the deletions allowed in the abstract transitions when a spurious
+counterexample is found~\cite{ACDHHR10}. Monotonic abstraction is also related
+to the verification of programs running under weak memory models, where the
+buffers of the processes raise similar questions of monotonicity, see
+Section~\ref{sec:other} and Chapter~\chapref{Weak Memory Models}.

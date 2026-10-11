@@ -16,8 +16,11 @@
 \usepackage{enumitem}
 \usepackage{cite}
 \usepackage[font=small,labelfont=bf]{caption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\floatname{algorithm}{Procedure}
 \usepackage{tikz}
-\usetikzlibrary{automata,positioning,arrows.meta,calc}
+\usetikzlibrary{automata,positioning,arrows.meta,calc,shapes.geometric,shapes.misc,fit}
 
 % ── Hyperref ──────────────────────────────────────────────────────────────────
 \hypersetup{
@@ -42,10 +45,14 @@
 \setlength{\emergencystretch}{1.5em}
 
 % ── Notation ──────────────────────────────────────────────────────────────────
-% Local states of the running example (idle, waiting, critical).
+% Local states of the mutual exclusion protocol (idle, requesting, waiting, critical).
 \newcommand{\Idle}{\mathsf{i}}
+\newcommand{\Req}{\mathsf{r}}
 \newcommand{\Wait}{\mathsf{w}}
 \newcommand{\Crit}{\mathsf{c}}
+% Cross-reference to another chapter of the handbook (placeholder until the
+% chapter numbers are known).
+\newcommand{\chapref}[1]{``#1''}
 % Token-passing example (token, no token).
 \newcommand{\Tok}{\mathsf{t}}
 \newcommand{\NoTok}{\mathsf{n}}
@@ -58,6 +65,10 @@
 \newcommand{\Post}{\mathit{Post}}
 % Upward closure.
 \newcommand{\upc}[1]{{\uparrow}#1}
+
+% ── Theorems ─────────────────────────────────────────────────────────────────
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
 
 \bibliographystyle{alpha}
 
@@ -76,14 +87,11 @@
 % ── Body: one file per section ────────────────────────────────────────────────
 \input{sections/introduction}
 \input{sections/preliminaries}
-\input{sections/early-foundations}
-\input{sections/cutoff}
+\input{sections/early-developments}
 \input{sections/regular-model-checking}
-\input{sections/abstraction-network-invariants}
-\input{sections/deductive}
-\input{sections/smt}
-\input{sections/weak-memory}
-\input{sections/quantum}
+\input{sections/monotonic-abstraction}
+\input{sections/view-abstraction}
+\input{sections/other-approaches}
 \input{sections/industrial}
 \input{sections/relations}
 \input{sections/conclusion}

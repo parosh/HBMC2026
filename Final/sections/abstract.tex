@@ -1,42 +1,25 @@
 % Abstract for the chapter "Parameterized Verification".
 \begin{abstract}
-Parameterized verification is the problem of establishing that a correctness
-property holds for a family of systems indexed by a natural number~$n$,
-representing the number of components, for all values of~$n$ simultaneously.
-The problem is undecidable in general, but a wide range of techniques has
-been developed that achieve decidability or effective automation for
-practically important classes of systems.
+We consider the model checking problem for \emph{parameterized systems}:
+systems that consist of an arbitrary number of components. The task is to show
+correctness regardless of the number of components. Examples of parameterized
+systems include mutual exclusion algorithms, cache coherence protocols,
+network protocols, and distributed algorithms. The problem is undecidable in
+general, but a wide range of techniques has been developed that achieve
+decidability or effective automation for practically important classes of
+systems.
 
-This chapter surveys the main approaches, using a simple mutual exclusion
-protocol as a running example. Cutoff methods reduce verification to a finite
-number of instances by exploiting symmetry: a cutoff theorem asserts that
-correctness up to some bound~$k$ implies correctness for all sizes, and dynamic
-variants such as view abstraction determine the cutoff adaptively during the
-analysis. Regular model checking represents configurations as words and
-transition relations as finite-state transducers, reducing reachability to
-transducer closure; its lightweight variant, monotonic abstraction, uses
-upward-closed sets and backward reachability to obtain termination via
-well-quasi-ordering arguments. Abstraction and network invariant methods
-reduce the parameterized problem to a finite one by replacing the unbounded
-environment of a process with a single abstract summary. Deductive and
-proof-based methods construct inductive invariants that hold symbolically for
-all~$n$, with automation provided by invisible-invariant synthesis and
-interactive proof tools. SMT-based methods, including array-based backward
-reachability, IC3/PDR with quantified invariant inference, and decidable
-fragments of first-order logic, automate invariant discovery using modern
-satisfiability solvers.
-
-Two application domains illustrate how these techniques extend to harder
-settings. For concurrent programs under weak memory models, where hardware
-reordering introduces unbounded per-thread buffers, a dual load-buffer
-semantics restores the monotonicity required for backward reachability, giving
-the first decidability result for parameterized TSO verification and a
-\textsc{PSpace}-completeness characterization; the richer Intel x86 model
-(eTSO) requires better quasi-orderings, marking their first use in program
-verification. For parameterized quantum circuits, where the parameter counts
-qubits rather than processes and correctness is a relational input-output
-property, synchronized weighted tree automata provide a symbolic
-representation of infinite families of quantum states, and a transducer-based
-composition framework yields the first fully automatic verification of
-parameterized quantum programs.
+We present three techniques in detail. Regular model checking represents
+configurations as words and transition relations as finite-state transducers,
+and we describe an acceleration technique that computes the transitive closure
+of a transducer by quotienting. Monotonic abstraction over-approximates
+systems with global conditions by well-structured transition systems, so that
+safety can be checked by backward reachability analysis on upward-closed sets.
+View abstraction inspects only small instances of the system and recombines
+their views to obtain an over-approximation of all instances, detecting a
+cutoff during the analysis; it is complete for a large class of well-structured
+systems. We then give an overview of other approaches, including counting
+abstraction, cutoff theorems, network invariants, deductive and SMT-based
+methods, and applications to programs running under weak memory models and to
+parameterized quantum circuits.
 \end{abstract}

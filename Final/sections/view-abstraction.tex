@@ -1,0 +1,220 @@
+% ═════════════════════════════════════════════════════════════════════════════
+\section{View Abstraction}
+\label{sec:views}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Monotonic abstraction computes the configurations from which a bad
+configuration is reachable, starting from the bad configurations and going
+backwards. In this section, we present \emph{view
+abstraction}~\cite{AHH13,AHH16}, a forward analysis that exploits a
+\emph{small model property} of many parameterized systems: the behavior of
+large instances is already visible in small ones. A configuration of a large
+instance can often be seen as a combination of patterns that already occur in
+configurations of small instances, and if a bad pattern exists, it can often be
+found with only a few processes. The method therefore inspects only small
+instances of the system, and abstracts the configurations it finds into
+\emph{views}, which describe the system from the perspective of a fixed number
+of processes. The views are then recombined to obtain an over-approximation of
+the reachable configurations of all sizes. The number of processes that need to
+be inspected is not fixed in advance: the method discovers a \emph{cutoff
+point} during the analysis, beyond which the search need not continue. In this
+sense, view abstraction is a \emph{dynamic cutoff} method, in contrast to the
+static cutoff theorems discussed in Section~\ref{sec:other}. Through the theory
+of Section~\ref{sec:wqo}, the method is complete for a large class of
+well-structured systems.
+
+\subsection{Model}
+
+We consider parameterized systems with a linear topology as defined in
+Section~\ref{sec:prelim}, and we assume that global conditions are checked
+atomically. For instance, the rule~$t_4$ of Figure~\ref{fig:mutex} is written
+$\textbf{if}\ \forall j < i : \{\Idle\}\ \textbf{then}\ \Wait \to \Crit$. We assume that $\Bad = \upc{B_{\min}}$ is the
+upward closure of a finite set $B_{\min}$ of minimal bad configurations with
+respect to the subword ordering. We write $\mathcal{R}_k$ for the set of configurations of size
+at most~$k$ that are reachable from initial configurations of size at
+most~$k$. Since the transitions do not change the size of a configuration,
+$\mathcal{R}_k$ is finite and can be computed by explicit-state exploration.
+
+\subsection{Views}
+
+For a natural number~$k$, a \emph{view} of size~$k$ of a configuration is a
+subword of the configuration of length~$k$. A view retains the states of $k$
+processes, in the order in which they occur in the configuration, and ignores
+the other processes. We write $\mathcal{V}_k$ for the set of words of length
+at most~$k$ over~$Q$, which are the possible views of size up to~$k$. The
+\emph{abstraction function} $\alpha_k$ maps a configuration~$c$ to the set of
+its views of size up to~$k$, that is, to the set of words $v \in
+\mathcal{V}_k$ with $v \preceq c$. For a set~$X$ of configurations, $\alpha_k(X)$
+is the union of the sets $\alpha_k(c)$ with $c \in X$. The \emph{concretization
+function} $\gamma_k$ maps a set~$V$ of views to the set of all configurations
+that can be built from views in~$V$:
+\[
+\gamma_k(V) = \{ c \mid \alpha_k(c) \subseteq V \} .
+\]
+The two functions form a Galois connection, so $X \subseteq
+\gamma_k(\alpha_k(X))$ for every set~$X$ of configurations.
+
+The concretization is an over-approximation. Consider the set $X =
+\{\Idle\Req\Wait,\, \Req\Wait\Crit,\, \Idle\Wait\Crit\}$. Its views of size up
+to two are the four single states together with $\Idle\Req$, $\Idle\Wait$,
+$\Req\Wait$, $\Req\Crit$, $\Wait\Crit$, and $\Idle\Crit$. The concretization of
+these views contains the three configurations of~$X$, but also, for instance,
+the configuration $\Idle\Req\Crit$, all of whose views of size two belong to
+the set, and the configuration $\Idle\Req\Wait\Crit$ of size four. The views
+work together to represent a set of configurations: a configuration belongs to
+the concretization only if all its views do. Larger views impose more
+constraints, and the precision increases with~$k$: for every set~$X$ of
+configurations, we have $\gamma_{k+1}(\alpha_{k+1}(X)) \subseteq
+\gamma_k(\alpha_k(X))$.
+
+The \emph{abstract post-image} of a set~$V$ of views is defined as usual by
+$\mathit{Apost}_k(V) = \alpha_k(\Post(\gamma_k(V)))$. If a set~$V$ of views
+contains the views of the initial configurations and satisfies
+$\mathit{Apost}_k(V) \subseteq V$, then $\gamma_k(V)$ contains all reachable
+configurations, that is, $\mathcal{R} \subseteq \gamma_k(V)$.
+
+\subsection{The Procedure}
+
+\begin{algorithm}[t]
+\caption{Verification by view abstraction}
+\label{alg:views}
+\begin{algorithmic}[1]
+\FOR{$k = 1, 2, 3, \ldots$}
+  \IF{$\mathcal{R}_k \cap \Bad \neq \emptyset$}
+    \RETURN unsafe
+  \ENDIF
+  \STATE $V \leftarrow$ the least set of views that contains $\alpha_k(\Init)$ and satisfies $\mathit{Apost}_k(V) \subseteq V$
+  \IF{$\gamma_k(V) \cap \Bad = \emptyset$}
+    \RETURN safe
+  \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+The verification procedure (Procedure~\ref{alg:views}) consists of two nested
+loops. The outer loop increases the precision~$k$. For a given~$k$, the
+procedure first computes the reachable configurations of size up to~$k$
+exactly. If one of them is bad, the system is unsafe, and the run that reaches
+it is a counterexample. Otherwise, the procedure computes a fixpoint of the
+abstract post-image, starting from the views of the initial configurations. If
+the concretization of the fixpoint contains no bad configuration, the system is
+safe for all sizes. Otherwise, the result is inconclusive, since the bad
+configuration may be an artifact of the abstraction, and the procedure
+increases~$k$. The value of~$k$ for which the procedure terminates is a
+dynamic cutoff.
+
+The fixpoint computation cannot be performed directly, since $\gamma_k(V)$ is
+infinite in general. The key observation is that it suffices to consider the
+configurations of size at most $k+1$ in $\gamma_k(V)$:
+\[
+\alpha_k(\Post(\gamma_k(V))) \cup V
+= \alpha_k(\Post(\gamma_k^{k+1}(V))) \cup V ,
+\]
+where $\gamma_k^{k+1}(V)$ is the finite set of configurations of size at most
+$k+1$ in $\gamma_k(V)$. The reason is that a transition changes the state of
+one process, so a new view must contain the active process. For a local or a
+universal rule, the transition remains enabled if we remove processes other
+than the active one, since a universal condition only becomes easier to
+satisfy. For an existential rule, the transition remains enabled if we keep
+the active process and one witness. In both cases, every new view of size~$k$
+that is produced from a large configuration is also produced from a
+configuration of size at most $k+1$ in $\gamma_k(V)$, namely from the view
+extended with a witness. The test $\gamma_k(V) \cap \Bad = \emptyset$ is also
+finite: it amounts to checking that no configuration $b \in B_{\min}$ has all
+its views of size up to~$k$ in~$V$. In practice, the fixpoint computation is
+accelerated by starting from the views of $\mathcal{R}_k$ and
+$\mathcal{R}_{k+1}$ rather than from the views of~$\Init$, and in most
+experiments this initial set is already a fixpoint or close to
+one~\cite{AHH16}.
+
+\paragraph{Example.}
+We apply the procedure to the protocol of Figure~\ref{fig:mutex}. For $k = 1$,
+the reachable configurations of size one contain no bad configuration, and the
+fixpoint consists of the four views $\Idle$, $\Req$, $\Wait$, and $\Crit$. Its
+concretization contains all configurations, including $\Crit\Crit$, so the
+result is inconclusive. For $k = 2$, the reachable configurations of sizes one
+and two contain no bad configuration, and their views of size two are all
+words of length two except $\Crit\Crit$, $\Req\Crit$, and $\Wait\Crit$. The
+abstract post-image of these views, computed from the configurations of size at
+most three in their concretization, produces no new view, so the fixpoint is
+reached immediately. Since $\Crit\Crit$ is not among the views, the
+concretization contains no bad configuration, and the protocol is safe for all
+sizes, with dynamic cutoff~$2$. The fixpoint describes exactly the
+configurations that contain none of $\Crit\Crit$, $\Req\Crit$, and $\Wait\Crit$
+as a subword. These are the complement of the set computed by monotonic
+abstraction in Section~\ref{sec:monotonic}, which was generated by the same
+three configurations. The two methods arrive at the same invariant, one going
+forward from the initial configurations and the other going backward from the
+bad ones.
+
+\subsection{Termination and Completeness}
+
+The procedure is sound: when it returns safe, the system is safe, and when it
+returns unsafe, the counterexample is real. Termination cannot be guaranteed in
+general, since the problem is undecidable. However, the theory of
+well-quasi-orderings of Section~\ref{sec:wqo} identifies a large class of
+systems for which the procedure always terminates.
+
+For a set~$X$ of configurations, we define its \emph{downward closure}
+${\downarrow}X$ as the set of configurations~$c$ with $c \preceq c'$ for some
+$c' \in X$, and we say that $X$ is \emph{downward-closed} if $X =
+{\downarrow}X$. The complement of a downward-closed set is upward-closed.
+Suppose that $\mathcal{R}$ is downward-closed. Its complement is then
+upward-closed, and by Higman's lemma it has a finite generator. Let $K$ be the
+maximal size of a configuration in this generator. Then $\gamma_K(\alpha_K(\mathcal{R}))
+= \mathcal{R}$: a configuration outside~$\mathcal{R}$ contains an element of the
+generator as a subword, which is a view of size at most~$K$ that does not occur
+in any reachable configuration. It follows that the fixpoint computed for $K$
+describes exactly the reachable configurations, and the procedure terminates
+at the latest when $k = K$~\cite{AHH16}. In the example above, the reachable
+set is downward-closed and the generator of its complement is $\{\Crit\Crit,
+\Req\Crit, \Wait\Crit\}$, so $K = 2$.
+
+If the transition relation is monotonic with respect to the subword ordering
+and $\Bad$ is upward-closed, then the downward closure of~$\mathcal{R}$ is closed
+under transitions, and a bad configuration is reachable if and only if the
+downward closure of~$\mathcal{R}$ contains one. The argument above then applies
+to the downward closure, so the procedure is guaranteed to terminate for every
+monotonic system. This covers systems with local and existential transitions,
+and, after the extensions discussed below, Petri nets, broadcast protocols, and
+lossy channel systems. The result extends to general well-structured
+transition systems, provided that the configurations can be measured by a size
+that has finitely many configurations of each value~\cite{AHH16}. For such
+systems, view abstraction is an alternative to the backward reachability
+analysis of Section~\ref{sec:wqo}: it explores the system forwards from the
+initial configurations, and it terminates at the latest when $k$ reaches the
+size of the largest minimal configuration outside the downward closure of the
+reachable set. The protocol of
+Figure~\ref{fig:mutex} shows that the method can also succeed outside this
+class: its universal transitions are not monotonic, but its reachable set is
+downward-closed.
+
+\subsection{Extensions}
+
+The method extends to other communication primitives and topologies by
+adapting the abstraction function, the concretization, and the post-image.
+For broadcast and rendez-vous transitions, a transition may require the
+presence of several witnesses, and the configurations used in the abstract
+post-image must be larger, of size up to $k+m$ when a rendez-vous involves
+$m+1$ processes. Shared variables are modeled by a controller process whose
+state is kept in every view. For multisets, views are sub-multisets; for
+rings, they are circular subwords; and for trees, they are subtrees of a given
+depth~\cite{AHH16}.
+
+Some systems have no good downward-closed invariant, and their analysis with
+the views above produces false counterexamples for every~$k$. A typical case is
+a universal transition that is disabled in all reachable configurations by a
+process that a view of size~$k$ ignores. To handle such systems,
+\emph{context-sensitive views} record, in addition to the $k$ retained
+processes, the sets of states of the ignored processes between them. These
+contexts are taken into account when universal conditions are evaluated, which
+blocks the spurious transitions~\cite{AHH14,AHH16}. A further refinement of the
+views handles global conditions that are not checked atomically, by recording
+for each process how far it has progressed in its inspection of the others.
+With these extensions, the method verified the full, non-atomic version of
+Szymanski's mutual exclusion protocol, which, to the knowledge of the authors
+of~\cite{AHH16}, had not been verified automatically before. In the
+experiments reported in~\cite{AHH16}, which include cache coherence protocols,
+protocols on rings and trees, and Petri nets with inhibitor arcs, the method
+terminated almost immediately on most examples, which confirms that the
+relevant patterns already occur in small instances.
