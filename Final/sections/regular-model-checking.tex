@@ -77,6 +77,9 @@ write $R^i(T)$, $R^+(T)$, and $R^*(T)$ for $(R(T))^i$, $(R(T))^+$, and
 $(R(T))^*$. A pair $(u,v)$ belongs to $R^i(T)$ if $u$ can be rewritten
 into~$v$ by $i$ successive runs of~$T$.
 
+\lukas{Note that these are (letter-to-letter/length preserving) regular relations, that the fact that the transducers do not have $\epsilon$s is significant?}
+\lukas{Should one define automata too? (maybe not really needed, maybe they are defined somewhere?)}
+
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[->,>={Stealth[round]},shorten >=1pt,auto,
@@ -267,6 +270,8 @@ transition of~$T$ for each $j$ with $1 \leq j \leq m$. A run of the column
 transducer from $q_0^i$ to a sequence in $F^i$ accepts exactly the pairs
 in~$R^i(T)$, so $T^{\mathit{col}}$ accepts the relation~$R^+(T)$. Its set of
 states is infinite, however, so it cannot be built explicitly.
+\lukas{I have a trouble to get the idea -- what about more hing on why does it represent the $R^+(T)$? 
+The transitions mentioned above are not connected ...}
 
 \paragraph{Quotienting.}
 We now define an equivalence relation on columns that identifies columns
