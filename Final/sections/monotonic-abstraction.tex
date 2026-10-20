@@ -80,7 +80,7 @@ $t_4$; the other transitions are local.}
 \end{figure}
 
 \subsection{Model}
-
+\lukas{introduce somewhere the indexed quantifiers used in the figure}
 In the notation of Section~\ref{sec:prelim}, the protocol is the
 parameterized system with local states $Q = \{\Idle, \Req, \Wait, \Crit\}$
 and the local rules $t_2 = \Req \to \Wait$, $t_5 = \Crit \to \Req$, and $t_6 =
@@ -136,7 +136,7 @@ For a set $X \subseteq C$, we define its \emph{upward closure} $\upc{X} = \{ c
 \mid c' \sqsubseteq c \text{ for some } c' \in X \}$, and we say that $X$ is
 \emph{upward-closed} if $X = \upc{X}$. The \emph{generator}
 $\mathit{gen}(U)$ of an upward-closed set~$U$ is its set of minimal elements.
-If $\sqsubseteq$ is a WQO, then $\mathit{gen}(U)$ is finite and $U =
+If $\sqsubseteq$ is a WQO, then $\mathit{gen}(U)$ is finite \lukas{as clear from the definition ...} and $U =
 \upc{\mathit{gen}(U)}$, so upward-closed sets can be represented by finite
 sets. Moreover, every increasing sequence $U_0 \subseteq U_1 \subseteq \cdots$
 of upward-closed sets stabilizes after finitely many steps. In our example, the
@@ -149,7 +149,7 @@ a configuration $c_4$ with $c_3 \to c_4$ and $c_2 \sqsubseteq c_4$. A
 \emph{well-structured transition system} is a transition system with a WQO on
 its configurations with respect to which its transition relation is
 monotonic. If $\to$ is monotonic and $U$ is upward-closed, then $\Pre(U)$ is
-upward-closed.
+upward-closed.\lukas{not hard to show}
 
 Suppose that $\Bad$ is upward-closed. Procedure~\ref{alg:backward} computes a
 finite set~$U$ with $\upc{U} = \Pre^*(\Bad)$, the set of configurations from
@@ -346,7 +346,7 @@ been deleted. At this point, no new configurations are produced, and the
 analysis terminates.
 
 The set of configurations from which a bad configuration is reachable in the
-abstract system is therefore $\upc{\{\Crit\Crit, \Wait\Crit, \Req\Crit\}}$.
+abstract system is therefore $\upc{\{\Crit\Crit, \Wait\Crit, \Req\Crit\}}$.\lukas{technically, subset of this set, as it is an overapproximation (?)}
 It contains no initial configuration, since the initial configurations contain
 only idle processes. Hence no bad configuration is reachable in the abstract
 system, and, since $\to \subseteq \leadsto$, none is reachable in the concrete

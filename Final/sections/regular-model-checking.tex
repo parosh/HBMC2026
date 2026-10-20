@@ -258,6 +258,10 @@ labels of its steps.}
 \label{fig:columns}
 \end{figure}
 
+
+\lukas{I had a trouble to get the idea of column transducer -- what about a hint on why does it represent the $R^+(T)$? 
+The transitions mentioned above are not connected ...}
+\lukas{I see now, what would help would be just a note that the column transducer is, literarly, composition of any number of T. Each row takes the previous rows output as its input. This is somehow in between lines, but I think not explicitly said.}
 Formally, from a transducer $T = (P, q_0, \Theta, F)$ we define the
 \emph{column transducer} $T^{\mathit{col}}$ as follows. Its states are the
 nonempty sequences of states of~$T$, that is, the set~$P^+$. Its initial
@@ -270,8 +274,7 @@ transition of~$T$ for each $j$ with $1 \leq j \leq m$. A run of the column
 transducer from $q_0^i$ to a sequence in $F^i$ accepts exactly the pairs
 in~$R^i(T)$, so $T^{\mathit{col}}$ accepts the relation~$R^+(T)$. Its set of
 states is infinite, however, so it cannot be built explicitly.
-\lukas{I have a trouble to get the idea -- what about more hing on why does it represent the $R^+(T)$? 
-The transitions mentioned above are not connected ...}
+
 
 \paragraph{Quotienting.}
 We now define an equivalence relation on columns that identifies columns
@@ -406,6 +409,7 @@ configurations gives the reachable set $\NoTok^*\Tok\NoTok^*$, which does not
 intersect the bad configurations, so the protocol is safe.
 
 \subsection{Further Techniques}
+\lukas{armc with cegar is nice, pointer prog verification is a nice application of artmc}
 
 Acceleration is one of several techniques for computing transitive closures or
 reachable sets in regular model checking. Related constructions iterate

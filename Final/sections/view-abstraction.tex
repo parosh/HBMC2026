@@ -123,7 +123,7 @@ extended with a witness. The test $\gamma_k(V) \cap \Bad = \emptyset$ is also
 finite: it amounts to checking that no configuration $b \in B_{\min}$ has all
 its views of size up to~$k$ in~$V$. In practice, the fixpoint computation is
 accelerated by starting from the views of $\mathcal{R}_k$ and
-$\mathcal{R}_{k+1}$ rather than from the views of~$\Init$, and in most
+$\mathcal{R}_{k+1}$ \lukas{maybe remind them that they are obtained by running $k$ threads exactly} rather than from the views of~$\Init$, and in most
 experiments this initial set is already a fixpoint or close to
 one~\cite{AHH16}.
 
@@ -160,7 +160,7 @@ ${\downarrow}X$ as the set of configurations~$c$ with $c \preceq c'$ for some
 $c' \in X$, and we say that $X$ is \emph{downward-closed} if $X =
 {\downarrow}X$. The complement of a downward-closed set is upward-closed.
 Suppose that $\mathcal{R}$ is downward-closed. Its complement is then
-upward-closed, and by Higman's lemma it has a finite generator. Let $K$ be the
+upward-closed \lukas{repeats a previous sentence}, and by Higman's lemma it has a finite generator. Let $K$ be the
 maximal size of a configuration in this generator. Then $\gamma_K(\alpha_K(\mathcal{R}))
 = \mathcal{R}$: a configuration outside~$\mathcal{R}$ contains an element of the
 generator as a subword, which is a view of size at most~$K$ that does not occur
@@ -187,7 +187,7 @@ size of the largest minimal configuration outside the downward closure of the
 reachable set. The protocol of
 Figure~\ref{fig:mutex} shows that the method can also succeed outside this
 class: its universal transitions are not monotonic, but its reachable set is
-downward-closed.
+downward-closed. \lukas{long block of text somewhat ahrd to get oriented in, maybe we could state some of the main conclusions, as a theorem or somehow visibly}
 
 \subsection{Extensions}
 
@@ -217,4 +217,4 @@ of~\cite{AHH16}, had not been verified automatically before. In the
 experiments reported in~\cite{AHH16}, which include cache coherence protocols,
 protocols on rings and trees, and Petri nets with inhibitor arcs, the method
 terminated almost immediately on most examples, which confirms that the
-relevant patterns already occur in small instances.
+relevant patterns already occur in small instances. \lukas{maybe the lock-free pointers with Fred can be mentioned}

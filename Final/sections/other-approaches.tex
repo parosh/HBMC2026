@@ -65,7 +65,7 @@ of the topology and the specification logic~\cite{AJKR14}.
 Emerson and Kahlon~\cite{EK00} considered \emph{guarded protocols}, in which a
 transition is guarded by a \emph{conjunctive} condition, requiring all other
 processes to be in given states, or by a \emph{disjunctive} condition,
-requiring at least one of them to be. They established cutoffs that grow
+requiring at least one of them to be.\lukas{maybe say that it is similar to our universally, existentially quantified tranitions?} They established cutoffs that grow
 linearly with the number of local states of the template. For disjunctive
 guards, the argument is that each guard needs only one witness, so a small
 instance that keeps one process in each local state that occurs in a run can
@@ -113,7 +113,7 @@ lemmas; many of these lemmas can be derived from the message flows of the
 protocol~\cite{TT08}. For programs with an unbounded number of identical
 threads, \emph{thread-modular} reasoning verifies one thread against an
 assumption on the others~\cite{FQ03}, and its precision can be increased by
-reasoning about several threads at a time~\cite{HMP17,FKP15}.
+reasoning about several threads at a time~\cite{HMP17,FKP15}.\lukas{similar to view abstraction refinement}
 
 \subsection{Deductive and SMT-Based Methods}
 
