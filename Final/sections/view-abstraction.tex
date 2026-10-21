@@ -155,39 +155,89 @@ general, since the problem is undecidable. However, the theory of
 well-quasi-orderings of Section~\ref{sec:wqo} identifies a large class of
 systems for which the procedure always terminates.
 
-For a set~$X$ of configurations, we define its \emph{downward closure}
-${\downarrow}X$ as the set of configurations~$c$ with $c \preceq c'$ for some
-$c' \in X$, and we say that $X$ is \emph{downward-closed} if $X =
-{\downarrow}X$. The complement of a downward-closed set is upward-closed.
-Suppose that $\mathcal{R}$ is downward-closed. Its complement is then
-upward-closed \lukas{repeats a previous sentence}, and by Higman's lemma it has a finite generator. Let $K$ be the
-maximal size of a configuration in this generator. Then $\gamma_K(\alpha_K(\mathcal{R}))
-= \mathcal{R}$: a configuration outside~$\mathcal{R}$ contains an element of the
-generator as a subword, which is a view of size at most~$K$ that does not occur
-in any reachable configuration. It follows that the fixpoint computed for $K$
-describes exactly the reachable configurations, and the procedure terminates
-at the latest when $k = K$~\cite{AHH16}. In the example above, the reachable
-set is downward-closed and the generator of its complement is $\{\Crit\Crit,
-\Req\Crit, \Wait\Crit\}$, so $K = 2$.
+%% For a set~$X$ of configurations, we define its \emph{downward closure}
+%% ${\downarrow}X$ as the set of configurations~$c$ with $c \preceq c'$ for some
+%% $c' \in X$, and we say that $X$ is \emph{downward-closed} if $X =
+%% {\downarrow}X$. The complement of a downward-closed set is upward-closed.
+%% Suppose that $\mathcal{R}$ is downward-closed. Its complement is then
+%% upward-closed \lukas{repeats a previous sentence}, and by Higman's lemma it has a finite generator. Let $K$ be the
+%% maximal size of a configuration in this generator. Then $\gamma_K(\alpha_K(\mathcal{R}))
+%% = \mathcal{R}$: a configuration outside~$\mathcal{R}$ contains an element of the
+%% generator as a subword, which is a view of size at most~$K$ that does not occur
+%% in any reachable configuration. It follows that the fixpoint computed for $K$
+%% describes exactly the reachable configurations, and the procedure terminates
+%% at the latest when $k = K$~\cite{AHH16}. In the example above, the reachable
+%% set is downward-closed and the generator of its complement is $\{\Crit\Crit,
+%% \Req\Crit, \Wait\Crit\}$, so $K = 2$.
+%% 
+%% If the transition relation is monotonic with respect to the subword ordering
+%% and $\Bad$ is upward-closed, then the downward closure of~$\mathcal{R}$ is closed
+%% under transitions, and a bad configuration is reachable if and only if the
+%% downward closure of~$\mathcal{R}$ contains one. The argument above then applies
+%% to the downward closure, so the procedure is guaranteed to terminate for every
+%% monotonic system. This covers systems with local and existential transitions,
+%% and, after the extensions discussed below, Petri nets, broadcast protocols, and
+%% lossy channel systems. The result extends to general well-structured
+%% transition systems, provided that the configurations can be measured by a size
+%% that has finitely many configurations of each value~\cite{AHH16}. For such
+%% systems, view abstraction is an alternative to the backward reachability
+%% analysis of Section~\ref{sec:wqo}: it explores the system forwards from the
+%% initial configurations, and it terminates at the latest when $k$ reaches the
+%% size of the largest minimal configuration outside the downward closure of the
+%% reachable set. The protocol of
+%% Figure~\ref{fig:mutex} shows that the method can also succeed outside this
+%% class: its universal transitions are not monotonic, but its reachable set is
+%% downward-closed. 
+%%\lukas{long block of text somewhat ahrd to get oriented in, maybe we could state some of the main conclusions, as a theorem or somehow visibly}
 
-If the transition relation is monotonic with respect to the subword ordering
-and $\Bad$ is upward-closed, then the downward closure of~$\mathcal{R}$ is closed
-under transitions, and a bad configuration is reachable if and only if the
-downward closure of~$\mathcal{R}$ contains one. The argument above then applies
-to the downward closure, so the procedure is guaranteed to terminate for every
-monotonic system. This covers systems with local and existential transitions,
+
+We first establish when the reachable set~$\mathcal{R}$ can be represented
+exactly by views. For a set~$X$ of configurations, we define its
+\emph{downward closure} ${\downarrow}X$ as the set of configurations~$c$
+with $c \preceq c'$ for some $c' \in X$, and we say that $X$ is
+\emph{downward-closed} if $X = {\downarrow}X$.
+Suppose that $\mathcal{R}$ is downward-closed. Its complement is then
+upward-closed, and by Higman's lemma it has a finite generator. Let $K$ be the
+maximal size of a configuration in this generator. Then
+$\gamma_K(\alpha_K(\mathcal{R})) = \mathcal{R}$: a configuration
+outside~$\mathcal{R}$ contains an element of the generator as a subword,
+which is a view of size at most~$K$ that does not occur in any reachable
+configuration. Thus, $\mathcal{R}$ can be represented exactly by views of
+size at most~$K$.
+
+Secondly, monotonicity guarantees a sufficiently precise representation even when
+$\mathcal{R}$ is not downward-closed. If the transition relation is monotonic
+with respect to the subword ordering and $\Bad$ is upward-closed, then
+${\downarrow}\mathcal{R}$ is closed under transitions, and a bad configuration
+is reachable if and only if ${\downarrow}\mathcal{R}$ contains one.
+Thus, ${\downarrow}\mathcal{R}$ is an inductive invariant sufficient for proving
+safety. Since it is downward-closed, it is exactly representable by view
+abstraction. This covers systems with local and existential transitions,
 and, after the extensions discussed below, Petri nets, broadcast protocols, and
 lossy channel systems. The result extends to general well-structured
 transition systems, provided that the configurations can be measured by a size
-that has finitely many configurations of each value~\cite{AHH16}. For such
-systems, view abstraction is an alternative to the backward reachability
-analysis of Section~\ref{sec:wqo}: it explores the system forwards from the
-initial configurations, and it terminates at the latest when $k$ reaches the
-size of the largest minimal configuration outside the downward closure of the
-reachable set. The protocol of
-Figure~\ref{fig:mutex} shows that the method can also succeed outside this
-class: its universal transitions are not monotonic, but its reachable set is
-downward-closed. \lukas{long block of text somewhat ahrd to get oriented in, maybe we could state some of the main conclusions, as a theorem or somehow visibly}
+that has finitely many configurations of each value~\cite{AHH16}.
+
+Finally, the procedure does indeed compute this representation.
+For sufficiently large~$K$, view abstraction represents the inductive
+invariant ${\downarrow}\mathcal{R}$ exactly, so
+$\alpha_K({\downarrow}\mathcal{R})$ is closed under the abstract post-image.
+Since the procedure computes the least abstract fixpoint, its result~$V$
+is contained in $\alpha_K({\downarrow}\mathcal{R})$. Conversely, soundness gives
+$\alpha_K(\mathcal{R}) \subseteq V$. Taking the downward closure introduces
+no new views, so $\alpha_K(\mathcal{R}) = \alpha_K({\downarrow}\mathcal{R})$,
+and we conclude that $V = \alpha_K({\downarrow}\mathcal{R})$.
+Hence $\gamma_K(V) = {\downarrow}\mathcal{R}$, so the procedure proves
+safety by $k = K$ (unsafe systems are eventually detected by exact reachability with large enough $K$).
+
+For these systems, view abstraction provides a forward alternative to
+the backward reachability analysis of Section~\ref{sec:wqo}.
+The protocol of Figure~\ref{fig:mutex} shows that the method can also
+succeed without monotonicity: its universal transitions are not monotonic,
+but its reachable set is downward-closed. The generator of its complement
+is $\{\Crit\Crit, \Req\Crit, \Wait\Crit\}$, giving $K = 2$.
+
+
 
 \subsection{Extensions}
 

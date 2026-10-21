@@ -203,22 +203,22 @@ the right. (b) A transducer for the transitive closure $R^+(T)$.}
 \end{figure}
 
 \paragraph{The column transducer.}
-The column transducer simulates a sequence of $i$ runs of~$T$ by a single
-run. Figure~\ref{fig:columns} shows four runs $\rho_1, \ldots, \rho_4$ of the
-transducer~$T$ on words of length five. The runs relate the pairs
-$(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\Tok\NoTok\NoTok\NoTok)$,
-$(\NoTok\Tok\NoTok\NoTok\NoTok, \NoTok\NoTok\Tok\NoTok\NoTok)$,
-$(\NoTok\NoTok\Tok\NoTok\NoTok, \NoTok\NoTok\NoTok\Tok\NoTok)$, and
-$(\NoTok\NoTok\NoTok\Tok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$, so the pair
-$(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$ belongs to
-$R^4(T)$. If we read the four runs column by column, we obtain a single run
-whose states, called \emph{columns}, are sequences of four states of~$T$. Each
-step of this run is labeled by the total effect of the corresponding steps of
-the four runs. For instance, the first step is labeled $(\Tok,\NoTok)$, since
-the first steps of the four runs rewrite $\Tok$ to $\NoTok$, and then $\NoTok$
-to $\NoTok$ three times. The second step is labeled $(\NoTok,\NoTok)$, since
-the second steps rewrite $\NoTok$ to $\Tok$, then $\Tok$ to $\NoTok$, and then
-$\NoTok$ to $\NoTok$ twice.
+The column transducer simulates an arbitrary positive number $i$ of successive runs of $T$. Each of its transitions combines $i$ transitions of $T$ operating at the same position in the word. The first transition rewrites the original symbol $a_0$ to $a_1$, the second rewrites $a_1$ to $a_2$, and so on, until the $i$-th transition produces $a_i$. Thus, $a_j$ is the symbol at that position after the $j$-th run of $T$.
+ 
+ Figure~\ref{fig:columns} shows four runs $\rho_1, \ldots, \rho_4$ of the
+ transducer~$T$ on words of length five. The runs relate the pairs
+ $(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\Tok\NoTok\NoTok\NoTok)$,
+ $(\NoTok\Tok\NoTok\NoTok\NoTok, \NoTok\NoTok\Tok\NoTok\NoTok)$,
+ $(\NoTok\NoTok\Tok\NoTok\NoTok, \NoTok\NoTok\NoTok\Tok\NoTok)$, and
+ $(\NoTok\NoTok\NoTok\Tok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$, so the pair
+ $(\Tok\NoTok\NoTok\NoTok\NoTok, \NoTok\NoTok\NoTok\NoTok\Tok)$ belongs to
+ $R^4(T)$. If we read the four runs column by column, we obtain a single run
+ whose states, called \emph{columns}, are sequences of four states of~$T$. 
+For instance, the first step is labeled $(\Tok,\NoTok)$, since
+ the first steps of the four runs rewrite $\Tok$ to $\NoTok$, and then $\NoTok$
+ to $\NoTok$ three times. The second step is labeled $(\NoTok,\NoTok)$, since
+ the second steps rewrite $\NoTok$ to $\Tok$, then $\Tok$ to $\NoTok$, and then
+ $\NoTok$ to $\NoTok$ twice.
 
 \begin{figure}[t]
 \centering
@@ -259,9 +259,6 @@ labels of its steps.}
 \end{figure}
 
 
-\lukas{I had a trouble to get the idea of column transducer -- what about a hint on why does it represent the $R^+(T)$? 
-The transitions mentioned above are not connected ...}
-\lukas{I see now, what would help would be just a note that the column transducer is, literarly, composition of any number of T. Each row takes the previous rows output as its input. This is somehow in between lines, but I think not explicitly said.}
 Formally, from a transducer $T = (P, q_0, \Theta, F)$ we define the
 \emph{column transducer} $T^{\mathit{col}}$ as follows. Its states are the
 nonempty sequences of states of~$T$, that is, the set~$P^+$. Its initial
