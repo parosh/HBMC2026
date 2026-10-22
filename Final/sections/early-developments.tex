@@ -34,8 +34,7 @@ reachability questions arising in the analysis were connected to the theory of
 Petri nets and vector addition systems, through a \emph{counting abstraction}:
 since the user processes are anonymous, it
 suffices to record how many of them are in each local state. The question of
-whether some user process can reach a given local state
-\lukas{or, whether some user processes can reach a specific combination of states?}
+whether some user processes can reach a given combination of local states
  becomes the
 \emph{coverability} problem for Petri nets, which is decidable and, by the
 results of Lipton and Rackoff, \textsc{ExpSpace}-complete~\cite{Rac78,Esp98}.
@@ -69,6 +68,22 @@ model checking framework of Section~\ref{sec:rmc}, in which sets of global
 configurations of unbounded width are represented symbolically by finite
 automata.
 
+%% \paragraph{Symmetry.}
+%% A further theme running through this early work is the exploitation of the
+%% symmetry inherent in a population of identical processes. Because the identity
+%% of an individual process is immaterial to the global behavior of the system,
+%% verification can be carried out over equivalence classes of configurations
+%% rather than over configurations themselves~\cite{EmeSis96,CEFJ96,ID96}. Two
+%% configurations are equivalent if one is obtained from the other by permuting
+%% the process indices, and the quotient of the state space under this
+%% equivalence can be exponentially smaller than the original. Symmetry
+%% reduction applies to each instance separately, so it does not by itself solve
+%% the parameterized problem, but it explains why configurations of symmetric
+%% systems can be represented by multisets, and it is the basis of the counting
+%% abstraction above. \lukas{i somehow don't get the previous sentence} Combining symmetry with fairness leads to on-the-fly model
+%% checking procedures that keep the explored state space
+%% manageable~\cite{GyuSis97}.
+
 \paragraph{Symmetry.}
 A further theme running through this early work is the exploitation of the
 symmetry inherent in a population of identical processes. Because the identity
@@ -78,10 +93,9 @@ rather than over configurations themselves~\cite{EmeSis96,CEFJ96,ID96}. Two
 configurations are equivalent if one is obtained from the other by permuting
 the process indices, and the quotient of the state space under this
 equivalence can be exponentially smaller than the original. Symmetry
-reduction applies to each instance separately, so it does not by itself solve
-the parameterized problem, but it explains why configurations of symmetric
-systems can be represented by multisets, and it is the basis of the counting
-abstraction above. \lukas{i somehow don't get the previous sentence} Combining symmetry with fairness leads to on-the-fly model
+reduction does not by itself eliminate the need to reason about an arbitrary number of processes, but it explains why configurations of symmetric
+systems can be reduced to simple multisets of local process states, and it is the basis of the counting
+abstraction above. Combining symmetry with fairness leads to on-the-fly model
 checking procedures that keep the explored state space
 manageable~\cite{GyuSis97}.
 

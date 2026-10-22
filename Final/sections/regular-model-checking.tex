@@ -77,8 +77,13 @@ write $R^i(T)$, $R^+(T)$, and $R^*(T)$ for $(R(T))^i$, $(R(T))^+$, and
 $(R(T))^*$. A pair $(u,v)$ belongs to $R^i(T)$ if $u$ can be rewritten
 into~$v$ by $i$ successive runs of~$T$.
 
-\lukas{Note that these are (letter-to-letter/length preserving) regular relations, that the fact that the transducers do not have $\epsilon$s is significant?}
-\lukas{Should one define automata too? (maybe not really needed, maybe they are defined somewhere?)}
+We note that as in much of the work on regular model checking, we consider only
+\emph{letter-to-letter} transducers. General finite-state transducers allow
+$\varepsilon$ on either tape and recognize rational relations. They are
+more expressive but lack useful closure properties, such as closure under
+intersection. Extensions of regular model checking to non-length-preserving
+transducers are discussed for instance in~\cite{DLS01,AJNS04}.
+
 
 \begin{figure}[t]
 \centering
@@ -406,7 +411,6 @@ configurations gives the reachable set $\NoTok^*\Tok\NoTok^*$, which does not
 intersect the bad configurations, so the protocol is safe.
 
 \subsection{Further Techniques}
-\lukas{armc with cegar is nice, pointer prog verification is a nice application of artmc}
 
 Acceleration is one of several techniques for computing transitive closures or
 reachable sets in regular model checking. Related constructions iterate

@@ -123,7 +123,7 @@ extended with a witness. The test $\gamma_k(V) \cap \Bad = \emptyset$ is also
 finite: it amounts to checking that no configuration $b \in B_{\min}$ has all
 its views of size up to~$k$ in~$V$. In practice, the fixpoint computation is
 accelerated by starting from the views of $\mathcal{R}_k$ and
-$\mathcal{R}_{k+1}$ \lukas{maybe remind them that they are obtained by running $k$ threads exactly} rather than from the views of~$\Init$, and in most
+$\mathcal{R}_{k+1}$, obtained by exploring the system with the fixed number of $k$ and $k+1$ threads, rather than from the views of~$\Init$. In most
 experiments this initial set is already a fixpoint or close to
 one~\cite{AHH16}.
 
@@ -263,8 +263,13 @@ views handles global conditions that are not checked atomically, by recording
 for each process how far it has progressed in its inspection of the others.
 With these extensions, the method verified the full, non-atomic version of
 Szymanski's mutual exclusion protocol, which, to the knowledge of the authors
-of~\cite{AHH16}, had not been verified automatically before. In the
-experiments reported in~\cite{AHH16}, which include cache coherence protocols,
-protocols on rings and trees, and Petri nets with inhibitor arcs, the method
-terminated almost immediately on most examples, which confirms that the
-relevant patterns already occur in small instances. \lukas{maybe the lock-free pointers with Fred can be mentioned}
+of~\cite{AHH16}, had not been verified automatically before. 
+%
+In the experiments reported in~\cite{AHH16}, covering cache coherence
+protocols, protocols on rings and trees, and Petri nets with inhibitor
+arcs, the method terminated almost immediately on most examples,
+suggesting that the relevant patterns already occur in small instances.
+Furthermore, \cite{AHHJR17} demonstrates that view abstraction can be
+extended to complex state representations, such as the memory shapes
+of lock-free pointer dynamic data structures.
+
