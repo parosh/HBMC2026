@@ -20,10 +20,12 @@ a small instance and all larger instances has been established, model checking
 the small instance suffices. Establishing the correspondence requires, in
 general, an argument by the user, but the approach anticipates the cutoff
 theorems discussed in Section~\ref{sec:other}, in which the transfer from small to large
-instances is guaranteed by the structure of the systey it explicitly?paragraph{Systems with many processes.}
+instances is guaranteed by the structure of the system.
+
+\paragraph{Systems with many processes.}
 A foundational formulation considers a system composed of a single control
 process together with an unbounded collection of user processes sharing a
-common definition, communicating through rendez-vous synchronization in the
+common definition, communicating through rendezvous synchronization in the
 style of CCS~\cite{GerSis92}. The central contribution was to show that
 reasoning about the entire infinite family can be reduced to a finite analysis:
 decision procedures were given for checking whether every process satisfies a
@@ -37,7 +39,8 @@ suffices to record how many of them are in each local state. The question of
 whether some user processes can reach a given combination of local states
  becomes the
 \emph{coverability} problem for Petri nets, which is decidable and, by the
-results of Lipton and Rackoff, \textsc{ExpSpace}-complete~\cite{Rac78,Esp98}.
+results of Lipton~\cite{Lip76} and Rackoff~\cite{Rac78},
+\textsc{ExpSpace}-complete~\cite{Esp98}.
 This early demarcation of the boundary between decidable and undecidable cases,
 and of the algebraic structures underlying it, shaped much of the work that
 followed.
@@ -62,27 +65,11 @@ introduced automata as inductive invariants~\cite{SisGyu99}. A correctness
 property is itself specified by an automaton, from which an invariant
 automaton is synthesized; an induction on the number of processes then
 establishes that the property is preserved as the network grows. The method
-was shown to be complete for safety properties. It directly anticipates both
+was shown to be complete for safety properties. It is closely related to both
 the network-invariant approach of Section~\ref{sec:other} and the regular
 model checking framework of Section~\ref{sec:rmc}, in which sets of global
 configurations of unbounded width are represented symbolically by finite
 automata.
-
-%% \paragraph{Symmetry.}
-%% A further theme running through this early work is the exploitation of the
-%% symmetry inherent in a population of identical processes. Because the identity
-%% of an individual process is immaterial to the global behavior of the system,
-%% verification can be carried out over equivalence classes of configurations
-%% rather than over configurations themselves~\cite{EmeSis96,CEFJ96,ID96}. Two
-%% configurations are equivalent if one is obtained from the other by permuting
-%% the process indices, and the quotient of the state space under this
-%% equivalence can be exponentially smaller than the original. Symmetry
-%% reduction applies to each instance separately, so it does not by itself solve
-%% the parameterized problem, but it explains why configurations of symmetric
-%% systems can be represented by multisets, and it is the basis of the counting
-%% abstraction above. \lukas{i somehow don't get the previous sentence} Combining symmetry with fairness leads to on-the-fly model
-%% checking procedures that keep the explored state space
-%% manageable~\cite{GyuSis97}.
 
 \paragraph{Symmetry.}
 A further theme running through this early work is the exploitation of the
@@ -115,7 +102,7 @@ handle protocols of practical relevance.
 
 \paragraph{Later developments.}
 These ideas have been extended in many directions. Parameterized systems with
-pairwise rendez-vous have been analyzed on a range of
+pairwise rendezvous have been analyzed on a range of
 topologies~\cite{AKRSV18}. In \emph{asynchronous shared-memory systems}, an
 unbounded number of anonymous processes communicate through shared registers
 without locks~\cite{EGM16}. In \emph{population protocols}, anonymous agents

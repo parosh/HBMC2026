@@ -1,202 +1,143 @@
 % ═════════════════════════════════════════════════════════════════════════════
-\section{Other Approaches}
+\section{Other Approaches and Related Chapters}
 \label{sec:other}
 % ═════════════════════════════════════════════════════════════════════════════
 
-The techniques presented in the previous sections are a small part of a large
-body of work. This section gives an overview of further approaches, with
-pointers to the literature and to other chapters of this handbook. More
-detailed surveys can be found in~\cite{AST18,BJKKRVW15,Esp14,ZP04}.
-
-\subsection{Counting Abstraction and Well-Structured Models}
-
-When processes are anonymous, a configuration can be represented by counting
-the number of processes in each local state. This \emph{counting abstraction}
-is exact, and it turns a system of finite-state processes that communicate
-through rendez-vous or shared variables into a Petri net, or equivalently a
-vector addition system. German and Sistla~\cite{GerSis92} considered systems
-consisting of a control process and an arbitrary number of identical user
-processes, communicating by rendez-vous. They gave decision procedures for
-indexed temporal properties, which run in time polynomial in the size of the
-process template when all processes are identical, and in doubly exponential
-time in the presence of a control process. Safety properties reduce to the
-coverability problem for Petri nets, which is
-\textsc{ExpSpace}-complete~\cite{Rac78,Esp98} and can be solved by the backward
-reachability analysis of Section~\ref{sec:wqo}. For liveness properties of the
-control process, the property is first combined with the control process
-through a B\"uchi automaton, and the existence of a fair run that visits
-accepting states infinitely often is reduced to the reachability problem for
-Petri nets, which is decidable~\cite{GerSis92}.
-
-\emph{Broadcast protocols}~\cite{EFM99} extend Petri nets with transitions in
-which all processes in a given state react to a message. They are
-well-structured, so safety properties expressed by upward-closed sets are
-decidable, while liveness properties become undecidable. Delzanno~\cite{Del00}
-applied counting abstraction with symbolic representations based on linear
-arithmetic to verify cache coherence protocols for an arbitrary number of
-caches. These ideas have been extended to systems with pairwise rendez-vous on
-various topologies~\cite{AKRSV18}, to asynchronous shared-memory systems in
-which anonymous processes communicate through shared registers~\cite{EGM16}, to
-population protocols~\cite{AADFP06,EGLM17}, and to ad hoc networks, in which
-processes broadcast to their neighbors in an unknown graph~\cite{DSZ10}. A
-recurring observation is that, when processes are anonymous and any behavior of
-one process can be replicated by others, the complexity of parameterized
-verification is often much lower than that of Petri net
-coverability~\cite{Esp14}. The general theory of well-structured transition
-systems, and the many models to which it applies, are the subject of
-Chapter~\chapref{Well-Structured Systems}.
+The techniques of Sections~\ref{sec:rmc} to~\ref{sec:views} are part of a
+larger body of work. In this section, we relate them to other approaches, and
+we point to the chapters of this handbook in which related topics are treated
+in depth. More detailed surveys of parameterized verification can be found
+in~\cite{AST18,BJKKRVW15,Esp14,ZP04}.
 
 \subsection{Cutoffs}
 
-A \emph{cutoff} for a class of systems and properties is a number~$k$ such
-that a property holds for all instances of a system whenever it holds for all
-instances of size at most~$k$. A cutoff theorem reduces parameterized
-verification to finitely many finite-state model checking problems. An early
-approach of this kind establishes a correspondence between systems of
-different sizes that preserves an indexed version of CTL$^*$ without the
-next-time operator~\cite{BCG89}. Emerson and Namjoshi~\cite{EN95} showed that,
-in rings in which a single token without data is passed between the processes,
-properties that refer to a fixed number of processes have a small cutoff that
-is independent of the process template. The result was extended to other
-topologies by decomposing networks into small fragments~\cite{CTTV04}, and the
-existence of cutoffs for token-passing systems has been characterized in terms
-of the topology and the specification logic~\cite{AJKR14}.
+A \emph{cutoff} for a class of systems is a number~$k$ such that a property
+holds for all instances of a system whenever it holds for all instances of size
+at most~$k$. A cutoff theorem thus reduces parameterized verification to
+finitely many finite-state problems. Emerson and Namjoshi~\cite{EN95} showed
+that, in rings in which a single token without data is passed between the
+processes, properties that refer to a fixed number of processes have a small
+cutoff that does not depend on the process template. Emerson and
+Kahlon~\cite{EK00} considered \emph{guarded protocols}, in which a transition is
+guarded by a \emph{conjunctive} condition, requiring all other processes to be
+in given states, or by a \emph{disjunctive} condition, requiring at least one
+of them to be. In the notation of Section~\ref{sec:prelim}, these are
+universal and existential conditions with range~$\neq$. For disjunctive
+guards, each guard needs only one witness, so a small instance that keeps one
+process in each local state that occurs in a run can simulate the run. For
+conjunctive guards, removing processes can only make the guards easier to
+satisfy, so the projection of a run onto a subset of the processes is a run of
+a smaller instance. The same two arguments explain why view abstraction only
+needs configurations of size $k+1$ to compute the abstract post-image
+(Section~\ref{sec:views}). Cutoff results have been extended to other
+topologies~\cite{CTTV04,AJKR14}, to fairness and deadlock
+detection~\cite{AJK16}, and to cache coherence protocols~\cite{EK03}. Static
+cutoffs hold only for specific classes of systems, and they may be large.
+\emph{Dynamic} cutoff methods, such as view abstraction and the method of
+Kaiser, Kroening, and Wahl~\cite{KKW10} for programs with an unbounded number
+of threads, find the cutoff during the analysis.
 
-Emerson and Kahlon~\cite{EK00} considered \emph{guarded protocols}, in which a
-transition is guarded by a \emph{conjunctive} condition, requiring all other
-processes to be in given states, or by a \emph{disjunctive} condition,
-requiring at least one of them to be. 
-%\lukas{maybe say that it is similar to our universally, existentially quantified tranitions?} 
-They established cutoffs that grow
-linearly with the number of local states of the template. For disjunctive
-guards, the argument is that each guard needs only one witness, so a small
-instance that keeps one process in each local state that occurs in a run can
-simulate the run. For conjunctive guards, removing processes can only make the
-guards easier to satisfy, so the projection of a run onto a subset of the
-processes is a run of a smaller instance; liveness properties require more
-care, since the projection of a fair run need not be fair. The cutoffs were
-later sharpened and extended to fairness and deadlock
-detection~\cite{AJK16}, and specialized cutoff methods were developed for cache
-coherence protocols~\cite{EK03}. Static cutoffs may be large, and each theorem
-covers a specific class of systems. Dynamic cutoff methods, such as view
-abstraction (Section~\ref{sec:views}) and the method of Kaiser, Kroening, and
-Wahl~\cite{KKW10} for programs with an unbounded number of threads, discover
-the cutoff during the analysis.
+\subsection{Abstraction and Compositional Reasoning}
 
-\subsection{Abstraction and Network Invariants}
-
-A \emph{network invariant} is a process~$I$ that abstracts the composition of
-any number of copies of the template. Kurshan and McMillan~\cite{KM89}, and
-independently Wolper and Lovinfosse~\cite{WL89}, observed that it suffices to
-check that $I$ abstracts a single copy, and that the composition of~$I$ with
-one more copy is again abstracted by~$I$; verifying the composition of~$I$
-with a fixed environment then establishes the property for all sizes. The
-approach was generalized to networks generated by grammars~\cite{CGJ97}, to
-invariants given by automata for linear networks~\cite{SisGyu99}, and to
-invariants that are computed automatically~\cite{LHR97} or established
-deductively~\cite{KPSZ02}. Symmetry reduction exploits the fact that the
-identity of an individual process is irrelevant, and explores equivalence
-classes of configurations instead of configurations~\cite{EmeSis96,CEFJ96,ID96,GyuSis97};
-it applies to each instance separately, but it is the basis of the counting
-abstraction above.
-
-Several abstractions summarize the processes by a finite amount of
-information. \emph{$(0,1,\infty)$-counter abstraction}~\cite{PXZ02} records,
-for each local state, whether zero, one, or many processes occupy it, and adds
-fairness conditions derived from the concrete system so that liveness
-properties can be proved. \emph{Environment abstraction}~\cite{CTV06,CTV08}
-describes the system from the point of view of one reference process, by
-predicates that relate the other processes to it. \emph{Indexed
-predicates}~\cite{LB07} lift predicate abstraction to quantified invariants.
-For cache coherence protocols, compositional model checking~\cite{McM01} and
-the CMP method~\cite{CMP04} keep a few processes concrete and replace the others
-by a single abstract process, whose behavior is constrained by noninterference
-lemmas; many of these lemmas can be derived from the message flows of the
-protocol~\cite{TT08}. For programs with an unbounded number of identical
-threads, \emph{thread-modular} reasoning verifies one thread against an
-assumption on the others~\cite{FQ03}, and its precision can be increased by
-reasoning about several threads at a time~\cite{HMP17,FKP15}.
-%\lukas{similar to view abstraction refinement}
+Several approaches keep a small number of processes precise and summarize the
+others, in the same way as view abstraction keeps $k$ processes.
+\emph{$(0,1,\infty)$-counter abstraction}~\cite{PXZ02} records, for each local
+state, whether zero, one, or many processes occupy it, and adds fairness
+conditions so that liveness properties can be proved. \emph{Environment
+abstraction}~\cite{CTV06,CTV08} describes the system from the point of view of
+one reference process, by predicates that relate the other processes to it.
+\emph{Indexed predicates}~\cite{LB07} lift predicate abstraction to quantified
+invariants. For cache coherence protocols, compositional model
+checking~\cite{McM01} and the CMP method~\cite{CMP04,TT08} keep a few
+processes concrete and replace the others by an abstract process, whose
+behavior is constrained by noninterference lemmas. \emph{Thread-modular}
+reasoning verifies one thread against an assumption on the others~\cite{FQ03},
+and its precision can be increased by reasoning about several threads at a
+time~\cite{HMP17,FKP15}, much as view abstraction gains precision by
+increasing~$k$. The network
+invariants of Section~\ref{sec:early} are a compositional method of the same
+kind: a single process abstracts any number of copies of the template, and it
+can be found by induction~\cite{KM89,WL89}, computed
+automatically~\cite{LHR97}, or established deductively~\cite{KPSZ02}.
+Abstraction and abstraction refinement are the subject of
+\chapref{13}, predicate abstraction of \chapref{15}, and compositional
+reasoning of \chapref{12}.
 
 \subsection{Deductive and SMT-Based Methods}
 
-Deductive methods prove that a quantified formula is an inductive invariant,
-that is, that it holds initially and is preserved by every transition, for an
-arbitrary number of processes. The approach goes back to the proof method of
-Owicki and Gries~\cite{OG76}, and is supported by languages and tools such as
-TLA+~\cite{Lam94,Lam02,CDLMRV12}, which has been applied to industrial
-protocols~\cite{NRZBMD15}. The main difficulty is to find the invariant. The
-\emph{invisible invariants} method~\cite{PRZ01,APRXZ01} computes the reachable
-configurations of a small instance, projects them onto one or two processes,
-and generalizes the result to a quantified candidate invariant, which is then
-checked for all sizes, for a restricted class of systems by a small-model
-argument.
+Deductive methods prove that a quantified formula is an inductive invariant
+for an arbitrary number of processes. The approach goes back to the proof method of
+Owicki and Gries~\cite{OG76}, and it is supported by languages and tools such
+as TLA$^+$~\cite{Lam94,Lam02,CDLMRV12}, which has been applied to industrial
+protocols~\cite{NRZBMD15}. The main difficulty is to find the invariant, and
+much work aims at inferring it automatically. The \emph{invisible invariants}
+method~\cite{PRZ01,APRXZ01} generalizes the reachable configurations of a
+small instance to a quantified candidate invariant, in a similar way as view
+abstraction generalizes the views of small instances. In \emph{array-based
+systems}~\cite{GR10,GS10} and in the Cubicle model checker~\cite{CGKMZ12,CGKMZ13},
+backward reachability is carried out on existentially quantified formulas with
+an SMT solver~\cite{BSST09}, and universal guards are handled by an
+approximation closely related to monotonic abstraction. The IC3/PDR
+algorithm~\cite{Bra11,EMB11} has been extended to infer universally quantified
+invariants~\cite{KBIRS17,GSM16}. The Ivy tool~\cite{PMPSS16} restricts
+verification conditions to a decidable fragment of first-order logic, in which
+consensus protocols such as Paxos have been verified~\cite{PLSS17}, and the
+inference of invariants for distributed protocols has been
+automated~\cite{MGJKKS19,KPIA20}. For fault-tolerant distributed algorithms,
+\emph{threshold automata} reduce parameterized verification to bounded model
+checking with an SMT solver~\cite{JKSVW13,KVW17,KLVW17}. Satisfiability modulo
+theories is the subject of \chapref{11}, the combination of model checking and
+automated deduction of \chapref{20}, and automated deductive program
+verification of \chapref{35}.
 
-SMT-based methods automate the search for invariants with satisfiability
-modulo theories solvers~\cite{BSST09}. In \emph{array-based
-systems}~\cite{GR10,GS10}, the state is a collection of arrays indexed by
-process identifiers, and backward reachability is carried out on existentially
-quantified formulas; universal guards are handled by an approximation closely
-related to monotonic abstraction. The Cubicle model checker~\cite{CGKMZ12}
-follows the same principles and uses finite instances to guess
-invariants~\cite{CGKMZ13}. The IC3/PDR algorithm~\cite{Bra11,EMB11} has been
-extended to infer universally quantified invariants~\cite{KBIRS17,GSM16}. The
-Ivy tool~\cite{PMPSS16} restricts verification conditions to a decidable
-fragment of first-order logic, which yields small counterexamples to induction
-that the user generalizes interactively, and complex consensus protocols such
-as Paxos have been verified within this fragment~\cite{PLSS17}. The inference
-of quantified invariants for distributed protocols has also been automated,
-for instance by generalizing invariants of small instances~\cite{MGJKKS19} or
-by searching for quantified separators~\cite{KPIA20}. For fault-tolerant
-distributed algorithms, in which processes wait for messages from a number of
-other processes that depends on the parameters, \emph{threshold automata} and
-a short counterexample property reduce parameterized verification to bounded
-model checking with an SMT solver~\cite{JKSVW13,KVW17,KLVW17}.
+\subsection{Related Models and Applications}
 
-\subsection{Weak Memory Models}
+\paragraph{Well-structured transition systems.}
+The counting abstraction of Section~\ref{sec:early} turns systems of anonymous
+finite-state processes into Petri nets~\cite{GerSis92}, or into broadcast
+protocols when processes can broadcast~\cite{EFM99,Del00}. These models, the
+backward reachability analysis of Section~\ref{sec:wqo}, and its extensions are
+the subject of \chapref{33}. Monotonic abstraction (Section~\ref{sec:monotonic})
+can be seen as a way to apply this theory to systems that are not
+well-structured, and view abstraction (Section~\ref{sec:views}) gives a forward
+alternative to backward reachability for well-structured systems.
 
-Parameterized verification is also relevant for concurrent programs running
-under weak memory models, where hardware reordering of memory operations is
-described by unbounded buffers associated with the
-threads~\cite{OSS09,SSONM10,AMT14}. Synchronization primitives, such as locks
-and mutual exclusion protocols, are written to be used by any number of
-threads, and their correctness must be established for all numbers of threads
-under the memory model of the architecture. For a fixed number of threads,
+\paragraph{Weak memory models.}
+Synchronization primitives, such as locks, must be correct for any number of
+threads under the memory model of the architecture, in which the reordering of
+memory operations is described by unbounded buffers~\cite{OSS09,SSONM10,AMT14}. For a fixed number of threads,
 safety verification under Total Store Order (TSO) is decidable by a reduction
 to lossy channel systems~\cite{ABBM10}. A \emph{dual} semantics, in which
 threads read from load buffers instead of writing to store buffers, makes the
-system monotonic with respect to a WQO, which yields the first decidability
-result for parameterized verification under TSO through backward
-reachability~\cite{AABN16,AABN18}. The problem was later shown to be
-\textsc{PSpace}-complete~\cite{AAR20}, and parameterized verification is also
-\textsc{PSpace}-complete under the release-acquire semantics of
-C11~\cite{KGMC22}. For the richer Intel x86 model, which includes
-non-temporal writes~\cite{RMV22,AABKS24}, parameterized verification requires
-\emph{better quasi-orderings}~\cite{AABKS26,Mar94}, which had earlier been used
-in verification for timed Petri nets~\cite{AN00,Abd10}. Verification under weak
-memory models is the subject of Chapter~\chapref{Weak Memory Models}.
+system monotonic with respect to a WQO, which gave the first decidability
+result for parameterized verification under TSO~\cite{AABN16,AABN18}. The
+problem is \textsc{PSpace}-complete when the threads do not use atomic
+read-modify-write operations~\cite{AAR20}, and parameterized verification under
+the release-acquire semantics of C11 is also \textsc{PSpace}-complete under
+restrictions on the use of compare-and-swap operations~\cite{KGMC22}. For the
+Intel x86 model with non-temporal writes~\cite{RMV22}, verification is
+undecidable in general, but it becomes decidable when each thread alternates a
+bounded number of times between TSO and PSO behavior~\cite{AABKS24}, also for
+an arbitrary number of threads, through well-structured systems based on
+\emph{better quasi-orderings}~\cite{AABKS26,Mar94,Abd10}. Weak memory models are
+treated in \chapref{36}.
 
-\subsection{Parameterized Quantum Circuits}
-
+\paragraph{Parameterized quantum circuits.}
 Parameterized verification has recently been applied to quantum programs, in
-which the parameter is the number of qubits. Most quantum algorithms, such as
-Shor's factoring algorithm~\cite{Sho97}, Grover's search~\cite{Gro96}, and the
-quantum Fourier transform, are described by programs that generate a circuit
-for each input size~$n$, and their correctness is a relational property that
-relates input states to output states for all~$n$. The framework
-of~\cite{AutoQPara} represents infinite families of quantum states by
-\emph{synchronized weighted tree automata}, in which an $n$-qubit state is a
-binary tree of depth~$n$ whose leaves carry complex amplitudes. Quantum gates
-are represented by transducers, which are composed to obtain a transducer for
-the whole parameterized program, in analogy with the transitive closure of
-transducers in regular model checking (Section~\ref{sec:rmc}). Verification
-reduces to functional inclusion and equivalence of these automata, which are
-decidable, and the framework gives the first fully automatic verification of
-parameterized quantum programs such as the Bernstein-Vazirani algorithm, a
-ripple-carry adder, and optimized implementations of Grover's search. It builds
-on automata-based verification of quantum circuits of fixed
-size~\cite{CCLLTY23,CCLLT23,LSTA25,AutoQ20}. Deductive approaches, based on
-quantum Hoare logic~\cite{Yin11}, on deductive verification
-frameworks~\cite{Qbricks}, on proof assistants~\cite{HRHWH21}, or on path
-sums~\cite{Amy19}, are complementary. Quantum systems are the
-subject of Chapter~\chapref{Quantum Systems}.
+which the parameter is the number of qubits. Quantum algorithms such as
+Grover's search~\cite{Gro96} are described by programs that generate a circuit
+for each number of qubits, and their correctness relates input states to
+output states for all sizes. One approach~\cite{AutoQPara} represents infinite
+families of quantum states by \emph{synchronized weighted tree automata} and
+quantum gates by transducers, in a way similar to regular model checking
+(Section~\ref{sec:rmc}), and reduces verification to decidable inclusion and
+equivalence problems for these automata. It builds on automata-based
+verification of quantum circuits of fixed
+size~\cite{CCLLTY23,CCLLT23,LSTA25,AutoQ20}. Verification of quantum systems,
+including deductive approaches~\cite{Yin11,Qbricks,HRHWH21,Amy19}, is the
+subject of \chapref{45}.
+
+\paragraph{Other chapters.}
+The automata-theoretic background of regular model checking is presented in
+\chapref{4}, and model checking of concurrent programs is the subject of
+\chapref{18}.

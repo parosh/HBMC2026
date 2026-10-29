@@ -31,7 +31,7 @@ verification from individual instances to the parameterized case.
 Parameterized verification is undecidable in general~\cite{AK86,Suz88}, even
 when each process is finite-state. Research in the area has therefore
 identified classes of systems for which the problem is decidable, developed
-algorithms that are not guaranteed to terminate but that terminate often in
+algorithms that are not guaranteed to terminate but that often terminate in
 practice, and used abstractions that over-approximate the behavior of the
 system. A recurring theme is the need for a finite symbolic representation of
 infinite sets of configurations, such as regular languages or upward-closed
@@ -50,24 +50,24 @@ of this handbook~\cite{AST18}. Instead of surveying all approaches at the same
 level of detail, we present three techniques in depth, with their algorithms
 and worked examples, and give an overview of the other approaches. The chapter
 is organized as follows. Section~\ref{sec:prelim} introduces parameterized
-systems and the verification problem, and recalls the basic notions of
-well-quasi-orderings and backward reachability. Section~\ref{sec:early}
+systems and the reachability problem. Section~\ref{sec:early}
 describes the early developments of the field. Section~\ref{sec:rmc} presents
 \emph{regular model checking}~\cite{KMMPS97,KW01,BJNT00}, which represents
 configurations as words and transition relations as finite-state transducers,
 and describes an acceleration technique for computing transitive closures of
-transducers. Section~\ref{sec:monotonic} presents \emph{monotonic
+transducers. Section~\ref{sec:monotonic} recalls the basic notions of
+well-quasi-orderings and backward reachability, and presents \emph{monotonic
 abstraction}~\cite{ADHR07}, which over-approximates systems with global
 conditions by well-structured transition systems, so that safety can be checked
 by backward reachability analysis. Section~\ref{sec:views} presents \emph{view
 abstraction}~\cite{AHH13,AHH16}, a forward analysis that inspects only small
 instances of the system and detects a cutoff during the analysis.
-Section~\ref{sec:other} gives an overview of other approaches, including
-counting abstraction, cutoff theorems, network invariants and other
-abstractions, deductive and SMT-based methods, and two recent applications,
-namely programs running under weak memory models and parameterized quantum
-circuits. Section~\ref{sec:industrial} discusses industrial applications,
-Section~\ref{sec:crossrefs} relates this chapter to other chapters of the
-handbook, and Section~\ref{sec:conclusion} concludes with open problems.
+Section~\ref{sec:other} relates these techniques to other approaches, namely
+cutoff theorems, abstraction and compositional reasoning, and deductive and
+SMT-based methods, and to other chapters of this handbook; it also discusses
+two recent applications, namely programs running under weak memory models and
+parameterized quantum circuits. Section~\ref{sec:industrial} discusses
+industrial applications, and Section~\ref{sec:conclusion} concludes with open
+problems.
 Throughout, we concentrate on safety properties, and mention liveness
 properties only occasionally.

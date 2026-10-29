@@ -28,7 +28,8 @@ is \emph{existential}.
 
 A \emph{configuration} of~$\mathcal{P}$ is a word $c \in Q^+$, where $c[i]$ is
 the local state of process~$i$. The number $|c|$ of processes is arbitrary but
-does not change during a run. Let $c$ be a configuration, $\delta$ a rule with
+does not change during a run, that is, processes are neither created nor
+removed. Let $c$ be a configuration, $\delta$ a rule with
 source~$s$ and destination~$d$, and $i$ a position with $c[i] = s$. We write
 $\delta(c,i)$ for the configuration~$c'$ with $c'[i] = d$ and $c'[j] = c[j]$
 for all $j \neq i$, provided that one of the following conditions holds:
@@ -42,10 +43,10 @@ process, and the processes $j$ with $j < i$ and $j > i$ its \emph{left} and
 \emph{right context}. We write $c \to c'$ if $c' = \delta(c,i)$ for some rule
 $\delta \in \Delta$ and position~$i$, and $\to^*$ for the reflexive transitive
 closure of~$\to$. For a set~$X$ of configurations, we write $\Post(X)$ for the
-set of configurations $c'$ with $c \to c'$ for some $c \in X$, and $\Pre(X)$ for
-the set of configurations $c$ with $c \to c'$ for some $c' \in X$.
-
-\lukas{Is process creation excluded? Should we say it explicitly?}
+set of configurations $c'$ with $c \to c'$ for some $c \in X$, $\Pre(X)$ for
+the set of configurations $c$ with $c \to c'$ for some $c' \in X$, and
+$\Pre^*(X)$ for the set of configurations $c$ with $c \to^* c'$ for some $c' \in
+X$.
 
 \subsection{The Reachability Problem}
 
@@ -60,8 +61,11 @@ configurations in which all processes are in a given initial state, and
 $\Bad$ is described by a finite set of patterns, such as the configurations in
 which two processes are in their critical sections.
 
-The problem is undecidable, even for finite-state processes. Apt and
+The problem is undecidable, although each process has only finitely many
+states. Apt and
 Kozen~\cite{AK86} showed that verifying a specification for all sizes is not
 even semi-decidable, and Suzuki~\cite{Suz88} showed that the problem remains
-undecidable for unidirectional rings of identical finite-state processes. We
-sketch a reduction from the halting problem in Section~\ref{sec:rmc}.
+undecidable for unidirectional rings of identical finite-state processes. In
+Section~\ref{sec:rmc}, we sketch a reduction from the halting problem for
+Turing machines to the reachability problem for linear systems in which
+neighboring processes communicate.

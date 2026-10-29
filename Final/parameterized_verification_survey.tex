@@ -3,6 +3,7 @@
 % ── Packages ──────────────────────────────────────────────────────────────────
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{lmodern}
 \usepackage[a4paper,
             top=60pt, bottom=60pt,
             left=146pt, right=146pt]{geometry}
@@ -58,9 +59,9 @@
 \newcommand{\Req}{\mathsf{r}}
 \newcommand{\Wait}{\mathsf{w}}
 \newcommand{\Crit}{\mathsf{c}}
-% Cross-reference to another chapter of the handbook (placeholder until the
-% chapter numbers are known).
-\newcommand{\chapref}[1]{``#1''}
+% Cross-reference to another chapter of the handbook (chapter numbers as in
+% the list of chapters of the second edition).
+\newcommand{\chapref}[1]{Chapter~#1}
 % Token-passing example (token, no token).
 \newcommand{\Tok}{\mathsf{t}}
 \newcommand{\NoTok}{\mathsf{n}}
@@ -101,7 +102,6 @@
 \input{sections/view-abstraction}
 \input{sections/other-approaches}
 \input{sections/industrial}
-\input{sections/relations}
 \input{sections/conclusion}
 
 % ── Bibliography ──────────────────────────────────────────────────────────────
